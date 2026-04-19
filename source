@@ -1,43 +1,140 @@
--- Obfuscated Script
-local _0x1=loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local _0x2=_0x1:CreateWindow({Title="Fly Script",SubTitle="by Gemini",TabWidth=160,Size=UDim2.fromOffset(450,320),Acrylic=true,Theme="Dark"})
-local _0x3={Main=_0x2:AddTab({Title="Utama",Icon="home"})}
-local _0x4=false local _0x5=50 local _0x6=game:GetService("Players")
-local _0x7=game:GetService("RunService")
-local _0x8=_0x6.LocalPlayer
-local _0x9=game:GetService("UserInputService")
+--[[
+    Custom Script: Spin & Fly
+    Library: Compkiller UI
+]]
 
-local function _0x10()
-    local c=_0x8.Character or _0x8.CharacterAdded:Wait()
-    local r=c:WaitForChild("HumanoidRootPart")
-    local v=Instance.new("BodyVelocity",r)
-    local g=Instance.new("BodyGyro",r)
-    v.MaxForce=Vector3.new(1e9,1e9,1e9)
-    g.MaxForce=Vector3.new(1e9,1e9,1e9)
-    c:WaitForChild("Humanoid").PlatformStand=true
-    task.spawn(function()
-        while _0x4 do
-            local cam=workspace.CurrentCamera
-            local d=Vector3.new(0,0,0)
-            if _0x9:IsKeyDown(Enum.KeyCode.W) then d=d+cam.CFrame.LookVector end
-            if _0x9:IsKeyDown(Enum.KeyCode.S) then d=d-cam.CFrame.LookVector end
-            if _0x9:IsKeyDown(Enum.KeyCode.A) then d=d-cam.CFrame.RightVector end
-            if _0x9:IsKeyDown(Enum.KeyCode.D) then d=d+cam.CFrame.RightVector end
-            v.Velocity=d*_0x5
-            g.CFrame=cam.CFrame
-            _0x7.RenderStepped:Wait()
-        end
-        v:Destroy()g:Destroy()
-        c.Humanoid.PlatformStand=false
-    end)
-end
+local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))();
 
-local _0x11=_0x3.Main:AddToggle("FlyToggle",{Title="Aktifkan Terbang",Default=false})
-_0x11:OnChanged(function()
-    _0x4=_0x11.Value
-    if _0x4 then _0x10() end
+-- Setup Config
+local ConfigManager = Compkiller:ConfigManager({
+	Directory = "Compkiller-UI",
+	Config = "Movement-Configs"
+});
+
+-- Loading
+Compkiller:Loader("rbxassetid://120245531583106" , 2.0).yield();
+
+-- Creating Window
+local Window = Compkiller.new({
+	Name = "PREMIUM CHEATS",
+	Keybind = "LeftAlt",
+	Logo = "rbxassetid://120245531583106",
+	TextSize = 15,
+});
+
+-- Variables for Features
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local RunService = game:GetService("RunService")
+
+local Flying = false
+local Spinning = false
+local FlySpeed = 50
+local SpinSpeed = 20
+
+-- Update character reference when respawning
+Player.CharacterAdded:Connect(function(char)
+    Character = char
 end)
 
-_0x3.Main:AddSlider("FlySpeed",{Title="Kecepatan",Default=50,Min=10,Max=300,Rounding=1,Callback=function(v)_0x5=v end})
-_0x2:SelectTab(1)
+-- Tab Category
+Window:DrawCategory({ Name = "Main Features" });
 
+local MainTab = Window:DrawTab({
+	Name = "Movement",
+	Icon = "Zap",
+	EnableScrolling = true
+});
+
+local MoveSection = MainTab:DrawSection({
+	Name = "Player Hacks",
+	Position = 'left'	
+});
+
+--- [[ SPIN FEATURE ]] ---
+MoveSection:AddToggle({
+	Name = "Spin Character",
+	Flag = "spin_toggle",
+	Default = false,
+	Callback = function(state)
+		Spinning = state
+		if Spinning then
+			task.spawn(function()
+				while Spinning do
+					if Character and Character:FindFirstChild("HumanoidRootPart") then
+						Character.HumanoidRootPart.CFrame = Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(SpinSpeed), 0)
+					end
+					task.wait()
+				end
+			end)
+		end
+	end,
+});
+
+MoveSection:AddSlider({
+	Name = "Spin Speed",
+	Min = 0,
+	Max = 100,
+	Default = 20,
+	Flag = "spin_speed",
+	Callback = function(v) SpinSpeed = v end
+});
+
+--- [[ FLY FEATURE ]] ---
+MoveSection:AddToggle({
+	Name = "Fly Mode",
+	Flag = "fly_toggle",
+	Default = false,
+	Callback = function(state)
+		Flying = state
+		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+		
+		if Flying then
+			local BodyGyro = Instance.new("BodyGyro", Character.HumanoidRootPart)
+			local BodyVelocity = Instance.new("BodyVelocity", Character.HumanoidRootPart)
+			
+			BodyGyro.P = 9e4
+			BodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+			BodyGyro.cframe = Character.HumanoidRootPart.CFrame
+			
+			BodyVelocity.velocity = Vector3.new(0, 0.1, 0)
+			BodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
+			
+			task.spawn(function()
+				while Flying do
+					RunService.RenderStepped:Wait()
+					local Camera = workspace.CurrentCamera
+					local MoveDirection = Vector3.new(0,0,0)
+					
+					-- Sederhana: Terbang mengikuti arah kamera
+					if Humanoid.MoveDirection.Magnitude > 0 then
+						BodyVelocity.velocity = Camera.CFrame.LookVector * FlySpeed
+					else
+						BodyVelocity.velocity = Vector3.new(0, 0.1, 0)
+					end
+					BodyGyro.cframe = Camera.CFrame
+				end
+				BodyGyro:Destroy()
+				BodyVelocity:Destroy()
+			end)
+		end
+	end,
+});
+
+MoveSection:AddSlider({
+	Name = "Fly Speed",
+	Min = 10,
+	Max = 300,
+	Default = 50,
+	Flag = "fly_speed",
+	Callback = function(v) FlySpeed = v end
+});
+
+-- Config Tab Setup
+local ConfigUI = Window:DrawConfig({
+	Name = "Settings",
+	Icon = "settings",
+	Config = ConfigManager
+});
+
+ConfigUI:Init();
