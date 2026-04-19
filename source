@@ -5,8 +5,9 @@ game.CoreGui.GhostGui.MainFrame.Title.Text = "Tornado & Fly GUI"
 local player = game.Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local root = char:WaitForChild("HumanoidRootPart")
+local humanoid = char:WaitForChild("Humanoid")
 
--- default value
+-- SETTINGS
 local tornadoOn = false
 local tornadoSpeed = 5
 local tornadoRadius = 10
@@ -14,51 +15,51 @@ local tornadoRadius = 10
 local flyOn = false
 local flySpeed = 50
 
--- TORNADO LOOP
-task.spawn(function()
-    while true do
-        task.wait()
-        if tornadoOn and root then
-            local t = tick()
-            local x = math.cos(t * tornadoSpeed) * tornadoRadius
-            local z = math.sin(t * tornadoSpeed) * tornadoRadius
-            root.Velocity = Vector3.new(x, 50, z)
-        end
-    end
-end)
-
--- FLY SYSTEM
+-- BODY VELOCITY (FLY)
 local bodyVelocity
 
+-- MAIN LOOP (gabungan tornado + fly)
 task.spawn(function()
     while true do
         task.wait()
-        if flyOn and root then
-            if not bodyVelocity then
-                bodyVelocity = Instance.new("BodyVelocity")
-                bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
-                bodyVelocity.Parent = root
+
+        if root then
+            -- TORNADO
+            if tornadoOn then
+                local t = tick()
+                local x = math.cos(t * tornadoSpeed) * tornadoRadius
+                local z = math.sin(t * tornadoSpeed) * tornadoRadius
+                root.Velocity = Vector3.new(x, 50, z)
             end
-            
-            local moveDir = player.Character.Humanoid.MoveDirection
-            bodyVelocity.Velocity = moveDir * flySpeed + Vector3.new(0, flySpeed/2, 0)
-        else
-            if bodyVelocity then
-                bodyVelocity:Destroy()
-                bodyVelocity = nil
+
+            -- FLY
+            if flyOn then
+                if not bodyVelocity then
+                    bodyVelocity = Instance.new("BodyVelocity")
+                    bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
+                    bodyVelocity.Parent = root
+                end
+
+                local moveDir = humanoid.MoveDirection
+                bodyVelocity.Velocity = moveDir * flySpeed + Vector3.new(0, flySpeed/2, 0)
+            else
+                if bodyVelocity then
+                    bodyVelocity:Destroy()
+                    bodyVelocity = nil
+                end
             end
         end
     end
 end)
 
--- UI
+-- ================= UI =================
 
--- Tornado Toggle
+-- TORNADO TOGGLE
 AddContent("Toogle", "Tornado ON/OFF", [[
 tornadoOn = not tornadoOn
 ]])
 
--- Speed Tornado
+-- TORNADO SPEED
 local speedBox = AddContent("TextBox","Tornado Speed")
 speedBox:GetPropertyChangedSignal("Text"):Connect(function()
     local val = tonumber(speedBox.Text)
@@ -67,7 +68,7 @@ speedBox:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
--- Radius Tornado
+-- TORNADO RADIUS
 local radiusBox = AddContent("TextBox","Tornado Radius")
 radiusBox:GetPropertyChangedSignal("Text"):Connect(function()
     local val = tonumber(radiusBox.Text)
@@ -76,12 +77,12 @@ radiusBox:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
--- Fly Toggle
+-- FLY TOGGLE
 AddContent("Toogle", "Fly ON/OFF", [[
 flyOn = not flyOn
 ]])
 
--- Fly Speed
+-- FLY SPEED
 local flyBox = AddContent("TextBox","Fly Speed")
 flyBox:GetPropertyChangedSignal("Text"):Connect(function()
     local val = tonumber(flyBox.Text)
@@ -90,6 +91,6 @@ flyBox:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
--- Label
+-- LABEL
 local label = AddContent("TextLabel")
-label.Text = "Made by ChatGPT 😎"
+label.Text = "Tornado + Fly Script Ready"
