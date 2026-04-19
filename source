@@ -1,77 +1,118 @@
 -- Load UI
 loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/UI-Library/refs/heads/main/Ghost%20Gui'))()
-game.CoreGui.GhostGui.MainFrame.Title.Text = "Tornado Controller"
+game.CoreGui.GhostGui.MainFrame.Title.Text = "Power Script"
 
--- CONFIG
-local tornado = nil
-local running = false
-local speed = 5 -- default speed
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
 
--- FUNCTION BUAT TORNADO
-local function createTornado()
-    if tornado then tornado:Destroy() end
+--------------------------------------------------
+-- 🌪️ TORNADO
+--------------------------------------------------
+local tornadoActive = false
+local tornadoParts = {}
 
-    tornado = Instance.new("Part")
-    tornado.Size = Vector3.new(5, 20, 5)
-    tornado.Anchored = true
-    tornado.CanCollide = false
-    tornado.Material = Enum.Material.Neon
-    tornado.Color = Color3.fromRGB(170, 170, 255)
-    tornado.Name = "Tornado"
-    tornado.Parent = workspace
+AddContent("Toogle", "Tornado", [[
+tornadoActive = true
 
-    -- posisi di depan player
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        tornado.Position = char.HumanoidRootPart.Position + Vector3.new(0, 0, -10)
-    end
+for i = 1, 40 do
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(1,1,1)
+    part.Shape = Enum.PartType.Ball
+    part.Material = Enum.Material.Neon
+    part.BrickColor = BrickColor.Random()
+    part.Anchored = true
+    part.CanCollide = false
+    part.Parent = workspace
 
-    -- efek muter
-    task.spawn(function()
-        while running and tornado do
-            tornado.CFrame = tornado.CFrame * CFrame.Angles(0, math.rad(speed), 0)
+    table.insert(tornadoParts, part)
+
+    coroutine.wrap(function()
+        local angle = 0
+        while tornadoActive and part.Parent do
+            angle += 0.2
+            local radius = 5
+            local height = (i/3)
+            part.Position = root.Position + Vector3.new(
+                math.cos(angle)*radius,
+                height,
+                math.sin(angle)*radius
+            )
             task.wait()
         end
-    end)
+        part:Destroy()
+    end)()
 end
-
--- BUTTON ON/OFF
-AddContent("Toogle", "Tornado ON/OFF", [[
-running = not running
-
-if running then
-    createTornado()
-else
-    if tornado then
-        tornado:Destroy()
-        tornado = nil
-    end
+]], [[
+tornadoActive = false
+for _,p in pairs(tornadoParts) do
+    if p then p:Destroy() end
 end
+tornadoParts = {}
 ]])
 
--- TEXTBOX UNTUK ATUR SPEED
-local SpeedBox = AddContent("TextBox","Set Speed (angka)")
+--------------------------------------------------
+-- 🕊️ FLY
+--------------------------------------------------
+local fly = false
+local bv
 
-SpeedBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local val = tonumber(SpeedBox.Text)
-    if val then
-        speed = val
-    end
-end)
+AddContent("Toogle", "Fly", [[
+fly = true
+bv = Instance.new("BodyVelocity")
+bv.MaxForce = Vector3.new(999999,999999,999999)
+bv.Parent = root
 
--- SWITCH (OPTIONAL MODE)
-AddContent("Switch", "Mode Warna", [[
--- Mode 1 (biru)
-if tornado then
-    tornado.Color = Color3.fromRGB(170,170,255)
+while fly do
+    bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * 60
+    task.wait()
 end
-]],[[
--- Mode 2 (merah)
-if tornado then
-    tornado.Color = Color3.fromRGB(255,80,80)
-end
+]], [[
+fly = false
+if bv then bv:Destroy() end
 ]])
 
--- LABEL INFO
+--------------------------------------------------
+-- 🕳️ BLACK HOLE
+--------------------------------------------------
+local blackholeActive = false
+local hole
+
+AddContent("Toogle", "Black Hole", [[
+blackholeActive = true
+
+hole = Instance.new("Part")
+hole.Shape = Enum.PartType.Ball
+hole.Size = Vector3.new(6,6,6)
+hole.Material = Enum.Material.Neon
+hole.BrickColor = BrickColor.new("Really black")
+hole.Anchored = true
+hole.CanCollide = false
+hole.Parent = workspace
+
+while blackholeActive do
+    hole.Position = root.Position + Vector3.new(0,5,0)
+
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") and v ~= hole then
+            local dist = (v.Position - hole.Position).Magnitude
+            if dist < 50 then
+                v.Velocity = (hole.Position - v.Position).Unit * 120
+            end
+        end
+    end
+
+    task.wait()
+end
+
+hole:Destroy()
+]], [[
+blackholeActive = false
+if hole then hole:Destroy() end
+]])
+
+--------------------------------------------------
+-- LABEL
+--------------------------------------------------
 local label = AddContent("TextLabel")
-label.Text = "Zahid Tornado Script"
+label.Text = "Script by ChatGPT"
