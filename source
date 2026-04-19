@@ -1,311 +1,77 @@
---[[
-    Movement Pack FULL + Tornado
-]]
+-- Load UI
+loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/UI-Library/refs/heads/main/Ghost%20Gui'))()
+game.CoreGui.GhostGui.MainFrame.Title.Text = "Tornado Controller"
 
-local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))()
+-- CONFIG
+local tornado = nil
+local running = false
+local speed = 5 -- default speed
 
-local ConfigManager = Compkiller:ConfigManager({
-	Directory = "Compkiller-UI",
-	Config = "Movement-Configs"
-})
+-- FUNCTION BUAT TORNADO
+local function createTornado()
+    if tornado then tornado:Destroy() end
 
-Compkiller:Loader("rbxassetid://120245531583106", 2.0).yield()
+    tornado = Instance.new("Part")
+    tornado.Size = Vector3.new(5, 20, 5)
+    tornado.Anchored = true
+    tornado.CanCollide = false
+    tornado.Material = Enum.Material.Neon
+    tornado.Color = Color3.fromRGB(170, 170, 255)
+    tornado.Name = "Tornado"
+    tornado.Parent = workspace
 
-local Window = Compkiller.new({
-	Name = "PREMIUM CHEATS",
-	Keybind = "LeftAlt",
-	Logo = "rbxassetid://120245531583106",
-	TextSize = 15,
-})
+    -- posisi di depan player
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        tornado.Position = char.HumanoidRootPart.Position + Vector3.new(0, 0, -10)
+    end
 
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
--- State
-local State = {
-	Flying = false,
-	Spinning = false,
-	FlySpeed = 50,
-	SpinSpeed = 20,
-	NoClip = false,
-	Speed = 16,
-	InfJump = false,
-	Hover = false,
-	AntiFall = false,
-	Tornado = false
-}
-
-local function getCharacter()
-	return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    -- efek muter
+    task.spawn(function()
+        while running and tornado do
+            tornado.CFrame = tornado.CFrame * CFrame.Angles(0, math.rad(speed), 0)
+            task.wait()
+        end
+    end)
 end
 
-Window:DrawCategory({ Name = "Main Features" })
+-- BUTTON ON/OFF
+AddContent("Toogle", "Tornado ON/OFF", [[
+running = not running
 
-local MainTab = Window:DrawTab({
-	Name = "Movement",
-	Icon = "Zap",
-	EnableScrolling = true
-})
+if running then
+    createTornado()
+else
+    if tornado then
+        tornado:Destroy()
+        tornado = nil
+    end
+end
+]])
 
-local MoveSection = MainTab:DrawSection({
-	Name = "Player Hacks",
-	Position = 'left'
-})
+-- TEXTBOX UNTUK ATUR SPEED
+local SpeedBox = AddContent("TextBox","Set Speed (angka)")
 
---------------------------------------------------
--- SPIN
---------------------------------------------------
-MoveSection:AddToggle({
-	Name = "Spin Character",
-	Default = false,
-	Callback = function(state)
-		State.Spinning = state
-		if state then
-			task.spawn(function()
-				while State.Spinning do
-					local hrp = getCharacter():FindFirstChild("HumanoidRootPart")
-					if hrp then
-						hrp.CFrame *= CFrame.Angles(0, math.rad(State.SpinSpeed), 0)
-					end
-					RunService.Heartbeat:Wait()
-				end
-			end)
-		end
-	end,
-})
+SpeedBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(SpeedBox.Text)
+    if val then
+        speed = val
+    end
+end)
 
-MoveSection:AddSlider({
-	Name = "Spin Speed",
-	Min = 0,
-	Max = 100,
-	Default = 20,
-	Callback = function(v) State.SpinSpeed = v end
-})
+-- SWITCH (OPTIONAL MODE)
+AddContent("Switch", "Mode Warna", [[
+-- Mode 1 (biru)
+if tornado then
+    tornado.Color = Color3.fromRGB(170,170,255)
+end
+]],[[
+-- Mode 2 (merah)
+if tornado then
+    tornado.Color = Color3.fromRGB(255,80,80)
+end
+]])
 
---------------------------------------------------
--- FLY (SMOOTH)
---------------------------------------------------
-MoveSection:AddToggle({
-	Name = "Fly Mode",
-	Default = false,
-	Callback = function(state)
-		State.Flying = state
-
-		local char = getCharacter()
-		local hrp = char:FindFirstChild("HumanoidRootPart")
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		if not hrp or not hum then return end
-
-		if state then
-			local bg = Instance.new("BodyGyro", hrp)
-			local bv = Instance.new("BodyVelocity", hrp)
-
-			bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
-			bg.P = 9e4
-			bv.MaxForce = Vector3.new(9e9,9e9,9e9)
-
-			task.spawn(function()
-				while State.Flying do
-					RunService.RenderStepped:Wait()
-
-					local target = hum.MoveDirection.Magnitude > 0
-						and Camera.CFrame.LookVector * State.FlySpeed
-						or Vector3.zero
-
-					bv.Velocity = bv.Velocity:Lerp(target, 0.15)
-					bg.CFrame = Camera.CFrame
-				end
-
-				bg:Destroy()
-				bv:Destroy()
-			end)
-		end
-	end,
-})
-
-MoveSection:AddSlider({
-	Name = "Fly Speed",
-	Min = 10,
-	Max = 300,
-	Default = 50,
-	Callback = function(v) State.FlySpeed = v end
-})
-
---------------------------------------------------
--- NOCLIP
---------------------------------------------------
-MoveSection:AddToggle({
-	Name = "No Clip",
-	Default = false,
-	Callback = function(state)
-		State.NoClip = state
-		if state then
-			task.spawn(function()
-				while State.NoClip do
-					for _, v in pairs(getCharacter():GetDescendants()) do
-						if v:IsA("BasePart") then
-							v.CanCollide = false
-						end
-					end
-					RunService.Stepped:Wait()
-				end
-			end)
-		end
-	end,
-})
-
---------------------------------------------------
--- SPEED
---------------------------------------------------
-MoveSection:AddSlider({
-	Name = "WalkSpeed",
-	Min = 16,
-	Max = 200,
-	Default = 16,
-	Callback = function(v)
-		local hum = getCharacter():FindFirstChildOfClass("Humanoid")
-		if hum then hum.WalkSpeed = v end
-	end
-})
-
---------------------------------------------------
--- INFINITE JUMP
---------------------------------------------------
-MoveSection:AddToggle({
-	Name = "Infinite Jump",
-	Default = false,
-	Callback = function(state)
-		State.InfJump = state
-
-		if state and not State.InfJumpConn then
-			State.InfJumpConn = UserInputService.JumpRequest:Connect(function()
-				if State.InfJump then
-					local hum = getCharacter():FindFirstChildOfClass("Humanoid")
-					if hum then
-						hum:ChangeState(Enum.HumanoidStateType.Jumping)
-					end
-				end
-			end)
-		elseif not state and State.InfJumpConn then
-			State.InfJumpConn:Disconnect()
-			State.InfJumpConn = nil
-		end
-	end,
-})
-
---------------------------------------------------
--- HOVER
---------------------------------------------------
-MoveSection:AddToggle({
-	Name = "Hover Mode",
-	Default = false,
-	Callback = function(state)
-		local hrp = getCharacter():FindFirstChild("HumanoidRootPart")
-		if not hrp then return end
-
-		if state then
-			local bv = Instance.new("BodyVelocity", hrp)
-			bv.Name = "HoverVelocity"
-			bv.MaxForce = Vector3.new(9e9,9e9,9e9)
-			bv.Velocity = Vector3.zero
-		else
-			local v = hrp:FindFirstChild("HoverVelocity")
-			if v then v:Destroy() end
-		end
-	end,
-})
-
---------------------------------------------------
--- ANTI FALL
---------------------------------------------------
-MoveSection:AddToggle({
-	Name = "Anti Fall Damage",
-	Default = false,
-	Callback = function(state)
-		local hum = getCharacter():FindFirstChildOfClass("Humanoid")
-		if not hum then return end
-
-		if state then
-			if not State.AntiFallConn then
-				State.AntiFallConn = hum.StateChanged:Connect(function(_, new)
-					if new == Enum.HumanoidStateType.Freefall then
-						task.delay(0.2, function()
-							if hum then
-								hum:ChangeState(Enum.HumanoidStateType.Landed)
-							end
-						end)
-					end
-				end)
-			end
-		else
-			if State.AntiFallConn then
-				State.AntiFallConn:Disconnect()
-				State.AntiFallConn = nil
-			end
-		end
-	end,
-})
-
---------------------------------------------------
--- 🌪️ TORNADO ITEM
---------------------------------------------------
-MoveSection:AddToggle({
-	Name = "Item Tornado",
-	Default = false,
-	Callback = function(state)
-		State.Tornado = state
-		
-		if state then
-			task.spawn(function()
-				local radius = 10
-				local height = 5
-				local speed = 5
-				
-				while State.Tornado do
-					local char = getCharacter()
-					local hrp = char:FindFirstChild("HumanoidRootPart")
-					if not hrp then break end
-					
-					local parts = {}
-					
-					for _, v in pairs(workspace:GetDescendants()) do
-						if v:IsA("BasePart")
-						and not v:IsDescendantOf(char)
-						and (v.Position - hrp.Position).Magnitude < 20 then
-							table.insert(parts, v)
-							if #parts > 25 then break end
-						end
-					end
-					
-					for i, part in ipairs(parts) do
-						local angle = (tick() * speed + i) % (math.pi * 2)
-						local offset = Vector3.new(
-							math.cos(angle) * radius,
-							math.sin(angle * 2) * height,
-							math.sin(angle) * radius
-						)
-						part.CFrame = CFrame.new(hrp.Position + offset)
-					end
-					
-					RunService.Heartbeat:Wait()
-				end
-			end)
-		end
-	end,
-})
-
---------------------------------------------------
--- CONFIG
---------------------------------------------------
-local ConfigUI = Window:DrawConfig({
-	Name = "Settings",
-	Icon = "settings",
-	Config = ConfigManager
-})
-
-ConfigUI:Init()
+-- LABEL INFO
+local label = AddContent("TextLabel")
+label.Text = "Zahid Tornado Script"
