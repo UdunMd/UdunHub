@@ -1,0 +1,43 @@
+-- Obfuscated Script
+local _0x1=loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local _0x2=_0x1:CreateWindow({Title="Fly Script",SubTitle="by Gemini",TabWidth=160,Size=UDim2.fromOffset(450,320),Acrylic=true,Theme="Dark"})
+local _0x3={Main=_0x2:AddTab({Title="Utama",Icon="home"})}
+local _0x4=false local _0x5=50 local _0x6=game:GetService("Players")
+local _0x7=game:GetService("RunService")
+local _0x8=_0x6.LocalPlayer
+local _0x9=game:GetService("UserInputService")
+
+local function _0x10()
+    local c=_0x8.Character or _0x8.CharacterAdded:Wait()
+    local r=c:WaitForChild("HumanoidRootPart")
+    local v=Instance.new("BodyVelocity",r)
+    local g=Instance.new("BodyGyro",r)
+    v.MaxForce=Vector3.new(1e9,1e9,1e9)
+    g.MaxForce=Vector3.new(1e9,1e9,1e9)
+    c:WaitForChild("Humanoid").PlatformStand=true
+    task.spawn(function()
+        while _0x4 do
+            local cam=workspace.CurrentCamera
+            local d=Vector3.new(0,0,0)
+            if _0x9:IsKeyDown(Enum.KeyCode.W) then d=d+cam.CFrame.LookVector end
+            if _0x9:IsKeyDown(Enum.KeyCode.S) then d=d-cam.CFrame.LookVector end
+            if _0x9:IsKeyDown(Enum.KeyCode.A) then d=d-cam.CFrame.RightVector end
+            if _0x9:IsKeyDown(Enum.KeyCode.D) then d=d+cam.CFrame.RightVector end
+            v.Velocity=d*_0x5
+            g.CFrame=cam.CFrame
+            _0x7.RenderStepped:Wait()
+        end
+        v:Destroy()g:Destroy()
+        c.Humanoid.PlatformStand=false
+    end)
+end
+
+local _0x11=_0x3.Main:AddToggle("FlyToggle",{Title="Aktifkan Terbang",Default=false})
+_0x11:OnChanged(function()
+    _0x4=_0x11.Value
+    if _0x4 then _0x10() end
+end)
+
+_0x3.Main:AddSlider("FlySpeed",{Title="Kecepatan",Default=50,Min=10,Max=300,Rounding=1,Callback=function(v)_0x5=v end})
+_0x2:SelectTab(1)
+
