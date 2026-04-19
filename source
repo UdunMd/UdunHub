@@ -1,199 +1,132 @@
--- LOAD GUI
-loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/UI-Library/refs/heads/main/Ghost%20Gui'))()
-game.CoreGui.GhostGui.MainFrame.Title.Text = "NDS HELPER ULTIMATE"
+-- VARIABLES
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
 
--- SERVICES
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Debris = game:GetService("Debris")
-local RunService = game:GetService("RunService")
+-- TORNADO
+local tornadoOn = false
+local tornadoSpeed = 5
+local tornadoRadius = 10
 
--- GLOBAL FLAGS
-_G.AutoHigh = false
-_G.AntiTornado = false
-_G.AntiSpin = false
-_G.ShieldMag = false
+-- FLY
+local flyOn = false
+local flySpeed = 50
 
--- ======================
--- BUTTON: TELEPORT ATAS
--- ======================
-AddContent("TextButton", "Naik ke atas", [[
-local char = game.Players.LocalPlayer.Character
-if char and char:FindFirstChild("HumanoidRootPart") then
-    char.HumanoidRootPart.CFrame += Vector3.new(0,100,0)
+local bodyVelocity
+local bodyGyro
+
+-- =========================
+-- FLY FUNCTIONS
+-- =========================
+local function startFly()
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
+    bodyVelocity.Velocity = Vector3.zero
+    bodyVelocity.Parent = root
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(1e5,1e5,1e5)
+    bodyGyro.CFrame = root.CFrame
+    bodyGyro.Parent = root
 end
-]])
 
--- ======================
--- AUTO HIGH GROUND
--- ======================
-AddContent("Toogle", "Auto Tempat Tinggi", [[
-_G.AutoHigh = not _G.AutoHigh
-while _G.AutoHigh do
-    task.wait(3)
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame += Vector3.new(0,50,0)
-    end
+local function stopFly()
+    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
 end
-]])
 
--- ======================
--- SPEED
--- ======================
-AddContent("Switch", "Speed Boost", [[
-local char = game.Players.LocalPlayer.Character
-if char then char.Humanoid.WalkSpeed = 30 end
-]], [[
-local char = game.Players.LocalPlayer.Character
-if char then char.Humanoid.WalkSpeed = 16 end
-]])
+-- =========================
+-- MAIN LOOP
+-- =========================
+task.spawn(function()
+    while true do
+        task.wait()
 
--- ======================
--- JUMP POWER
--- ======================
-local TextBox = AddContent("TextBox","Set JumpPower")
-TextBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local num = tonumber(TextBox.Text)
-    if num then
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.JumpPower = num
+        -- update character kalau respawn
+        character = player.Character or player.CharacterAdded:Wait()
+        humanoid = character:WaitForChild("Humanoid")
+        root = character:WaitForChild("HumanoidRootPart")
+
+        -- ================= FLY =================
+        if flyOn and bodyVelocity and bodyGyro then
+            local cam = workspace.CurrentCamera
+            local moveDir = humanoid.MoveDirection
+
+            local direction =
+                (cam.CFrame.RightVector * moveDir.X) +
+                (cam.CFrame.LookVector * moveDir.Z)
+
+            local vertical = 0
+            if moveDir.Magnitude > 0 then
+                vertical = 0.15
+            end
+
+            bodyVelocity.Velocity = (direction + Vector3.new(0, vertical, 0)) * flySpeed
+            bodyGyro.CFrame = cam.CFrame
+        end
+
+        -- ================= TORNADO =================
+        if tornadoOn and root then
+            for _, item in pairs(workspace:GetDescendants()) do
+                if item:IsA("BasePart") and not item.Anchored then
+                    local angle = tick() * tornadoSpeed
+
+                    local offset = Vector3.new(
+                        math.cos(angle) * tornadoRadius,
+                        2,
+                        math.sin(angle) * tornadoRadius
+                    )
+
+                    item.Velocity = (root.Position + offset - item.Position) * 5
+                end
+            end
         end
     end
 end)
 
--- ======================
--- ANTI RAGDOLL
--- ======================
-AddContent("TextButton", "Anti Jatuh", [[
-local char = game.Players.LocalPlayer.Character
-if char then
-    for _,v in pairs(char:GetDescendants()) do
-        if v:IsA("BodyVelocity") or v:IsA("BodyAngularVelocity") then
-            v:Destroy()
-        end
-    end
+-- =========================
+-- UI
+-- =========================
+
+-- FLY TOGGLE
+AddContent("Toogle", "Fly ON/OFF", [[
+flyOn = not flyOn
+if flyOn then
+    startFly()
+else
+    stopFly()
 end
 ]])
 
--- ======================
--- ANTI TORNADO (DOWN FORCE)
--- ======================
-AddContent("Toogle", "Anti Tornado", [[
-_G.AntiTornado = not _G.AntiTornado
-
-while _G.AntiTornado do
-    task.wait(0.1)
-    local char = game.Players.LocalPlayer.Character
-
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local bv = Instance.new("BodyVelocity")
-        bv.Velocity = Vector3.new(0,-60,0)
-        bv.MaxForce = Vector3.new(0,math.huge,0)
-        bv.Parent = char.HumanoidRootPart
-        game:GetService("Debris"):AddItem(bv,0.1)
+-- FLY SPEED
+local flyBox = AddContent("TextBox","Fly Speed")
+flyBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(flyBox.Text)
+    if val then
+        flySpeed = val
     end
-end
+end)
+
+-- TORNADO TOGGLE
+AddContent("Toogle", "Tornado ON/OFF", [[
+tornadoOn = not tornadoOn
 ]])
 
--- ======================
--- ANTI SPIN
--- ======================
-AddContent("Toogle", "Anti Spin Tornado", [[
-_G.AntiSpin = not _G.AntiSpin
-
-while _G.AntiSpin do
-    task.wait(0.1)
-    local char = game.Players.LocalPlayer.Character
-
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local bg = Instance.new("BodyGyro")
-        bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
-        bg.P = 1e4
-        bg.CFrame = char.HumanoidRootPart.CFrame
-        bg.Parent = char.HumanoidRootPart
-        game:GetService("Debris"):AddItem(bg,0.1)
+-- TORNADO SPEED
+local speedBox = AddContent("TextBox","Tornado Speed")
+speedBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(speedBox.Text)
+    if val then
+        tornadoSpeed = val
     end
-end
-]])
+end)
 
--- ======================
--- TORNADO SHIELD MAGNETIC (PRO)
--- ======================
-AddContent("Toogle", "Tornado Shield MAGNETIC", [[
-_G.ShieldMag = not _G.ShieldMag
-
-while _G.ShieldMag do
-    task.wait(1)
-
-    local player = game.Players.LocalPlayer
-    local char = player.Character
-
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local root = char.HumanoidRootPart
-
-        local parts = {}
-
-        -- ambil part sekitar (limit)
-        for _,v in pairs(workspace:GetDescendants()) do
-            if #parts >= 10 then break end
-
-            if v:IsA("BasePart") and not v.Anchored and v.CanCollide then
-                local dist = (v.Position - root.Position).Magnitude
-                if dist < 30 then
-                    table.insert(parts, v)
-                end
-            end
-        end
-
-        -- setup orbit magnetic
-        for i,part in ipairs(parts) do
-            local att0 = Instance.new("Attachment", part)
-            local att1 = Instance.new("Attachment", root)
-
-            local ap = Instance.new("AlignPosition")
-            ap.Attachment0 = att0
-            ap.Attachment1 = att1
-            ap.RigidityEnabled = true
-            ap.MaxForce = 1e6
-            ap.Responsiveness = 200
-            ap.Parent = part
-
-            local ao = Instance.new("AlignOrientation")
-            ao.Attachment0 = att0
-            ao.Attachment1 = att1
-            ao.RigidityEnabled = true
-            ao.MaxTorque = 1e6
-            ao.Responsiveness = 200
-            ao.Parent = part
-
-            coroutine.wrap(function()
-                local angle = (i/#parts) * math.pi * 2
-
-                while _G.ShieldMag and part and part.Parent do
-                    task.wait()
-
-                    angle += 0.04
-                    local radius = 7
-                    local height = 2
-
-                    local offset = Vector3.new(
-                        math.cos(angle) * radius,
-                        height,
-                        math.sin(angle) * radius
-                    )
-
-                    att1.Position = offset
-                end
-            end)()
-        end
+-- TORNADO RADIUS
+local radiusBox = AddContent("TextBox","Tornado Radius")
+radiusBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(radiusBox.Text)
+    if val then
+        tornadoRadius = val
     end
-end
-]])
-
--- ======================
--- LABEL
--- ======================
-local TextLabel = AddContent("TextLabel")
-TextLabel.Text = "Ultimate Mode: Tornado hampir ga ngaruh 😎"
+end)
