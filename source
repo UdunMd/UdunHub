@@ -1,140 +1,99 @@
--- LOAD UI
+-- Load UI
 loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/UI-Library/refs/heads/main/Ghost%20Gui'))()
-game.CoreGui.GhostGui.MainFrame.Title.Text = "Storm Control"
+game.CoreGui.GhostGui.MainFrame.Title.Text = "Tornado Combo"
 
--- VARIABLES
-local player = game.Players.LocalPlayer
+-- Variables
+local spinning = false
+local speed = 5
+local radius = 10
 
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local root = character:WaitForChild("HumanoidRootPart")
+-- Main Tornado Function
+local function startTornado()
+    local player = game.Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
 
--- TORNADO
-local tornadoOn = false
-local tornadoSpeed = 5
-local tornadoRadius = 10
+    spinning = true
 
--- FLY
-local flyOn = false
-local flySpeed = 50
+    task.spawn(function()
+        while spinning do
+            for i = 0, 360, speed do
+                if not spinning then break end
 
-local bodyVelocity
-local bodyGyro
+                local angle = math.rad(i)
+                local offset = Vector3.new(math.cos(angle)*radius, 0, math.sin(angle)*radius)
 
--- =========================
--- FLY FUNCTIONS
--- =========================
-local function startFly()
-    bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
-    bodyVelocity.Velocity = Vector3.zero
-    bodyVelocity.Parent = root
+                -- Spin Character
+                hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(speed*10), 0) + offset
 
-    bodyGyro = Instance.new("BodyGyro")
-    bodyGyro.MaxTorque = Vector3.new(1e5,1e5,1e5)
-    bodyGyro.CFrame = root.CFrame
-    bodyGyro.Parent = root
-end
-
-local function stopFly()
-    if bodyVelocity then bodyVelocity:Destroy() end
-    if bodyGyro then bodyGyro:Destroy() end
-end
-
--- =========================
--- MAIN LOOP
--- =========================
-task.spawn(function()
-    while true do
-        task.wait()
-
-        character = player.Character or player.CharacterAdded:Wait()
-        humanoid = character:WaitForChild("Humanoid")
-        root = character:WaitForChild("HumanoidRootPart")
-
-        -- FLY (MOBILE SUPPORT)
-        if flyOn and bodyVelocity and bodyGyro then
-            local cam = workspace.CurrentCamera
-            local moveDir = humanoid.MoveDirection
-
-            local direction =
-                (cam.CFrame.RightVector * moveDir.X) +
-                (cam.CFrame.LookVector * moveDir.Z)
-
-            local vertical = 0
-            if moveDir.Magnitude > 0 then
-                vertical = 0.15
-            end
-
-            bodyVelocity.Velocity = (direction + Vector3.new(0, vertical, 0)) * flySpeed
-            bodyGyro.CFrame = cam.CFrame
-        end
-
-        -- TORNADO
-        if tornadoOn and root then
-            for _, item in pairs(workspace:GetDescendants()) do
-                if item:IsA("BasePart") and not item.Anchored then
-                    local angle = tick() * tornadoSpeed
-
-                    local offset = Vector3.new(
-                        math.cos(angle) * tornadoRadius,
-                        2,
-                        math.sin(angle) * tornadoRadius
-                    )
-
-                    item.Velocity = (root.Position + offset - item.Position) * 5
+                -- Tornado Effect (pull items)
+                for _,v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and not v.Anchored and v ~= hrp then
+                        local dist = (v.Position - hrp.Position).Magnitude
+                        if dist < radius * 3 then
+                            local dir = (hrp.Position - v.Position).Unit
+                            
+                            -- Tarik + putar + angkat
+                            v.Velocity =
+                                dir * (speed * 15) +
+                                Vector3.new(
+                                    math.cos(angle) * speed * 5,
+                                    speed * 6,
+                                    math.sin(angle) * speed * 5
+                                )
+                        end
+                    end
                 end
+
+                task.wait()
             end
         end
+    end)
+end
+
+local function stopTornado()
+    spinning = false
+end
+
+-- UI BUTTONS
+AddContent("TextButton", "Start Tornado", [[
+startTornado()
+]])
+
+AddContent("TextButton", "Stop Tornado", [[
+stopTornado()
+]])
+
+-- SPEED CONTROL
+local SpeedBox = AddContent("TextBox","Set Speed")
+SpeedBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(SpeedBox.Text)
+    if val then
+        speed = val
     end
 end)
 
--- =========================
--- UI
--- =========================
+-- RADIUS CONTROL
+local RadiusBox = AddContent("TextBox","Set Radius")
+RadiusBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(RadiusBox.Text)
+    if val then
+        radius = val
+    end
+end)
+
+-- TOGGLE
+AddContent("Toogle", "Enable Tornado", [[
+startTornado()
+]])
+
+-- SWITCH
+AddContent("Switch", "Tornado Switch", [[
+startTornado()
+]],[[
+stopTornado()
+]])
 
 -- LABEL
-local label = AddContent("TextLabel")
-label.Text = "🔥 Storm Menu"
-
--- FLY TOGGLE
-AddContent("Toogle", "Fly ON/OFF", [[
-flyOn = not flyOn
-if flyOn then
-    startFly()
-else
-    stopFly()
-end
-]])
-
--- FLY SPEED
-local flyBox = AddContent("TextBox","Fly Speed")
-flyBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local val = tonumber(flyBox.Text)
-    if val then
-        flySpeed = val
-    end
-end)
-
--- TORNADO TOGGLE
-AddContent("Toogle", "Tornado ON/OFF", [[
-tornadoOn = not tornadoOn
-]])
-
--- TORNADO SPEED
-local speedBox = AddContent("TextBox","Tornado Speed")
-speedBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local val = tonumber(speedBox.Text)
-    if val then
-        tornadoSpeed = val
-    end
-end)
-
--- TORNADO RADIUS
-local radiusBox = AddContent("TextBox","Tornado Radius")
-radiusBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local val = tonumber(radiusBox.Text)
-    if val then
-        tornadoRadius = val
-    end
-end)
+local TextLabel = AddContent("TextLabel")
+TextLabel.Text = "Spin + Item Tornado Combo"
