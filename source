@@ -1,118 +1,95 @@
 -- Load UI
 loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/UI-Library/refs/heads/main/Ghost%20Gui'))()
-game.CoreGui.GhostGui.MainFrame.Title.Text = "Power Script"
+game.CoreGui.GhostGui.MainFrame.Title.Text = "Tornado & Fly GUI"
 
 local player = game.Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local root = char:WaitForChild("HumanoidRootPart")
 
---------------------------------------------------
--- 🌪️ TORNADO
---------------------------------------------------
-local tornadoActive = false
-local tornadoParts = {}
+-- default value
+local tornadoOn = false
+local tornadoSpeed = 5
+local tornadoRadius = 10
 
-AddContent("Toogle", "Tornado", [[
-tornadoActive = true
+local flyOn = false
+local flySpeed = 50
 
-for i = 1, 40 do
-    local part = Instance.new("Part")
-    part.Size = Vector3.new(1,1,1)
-    part.Shape = Enum.PartType.Ball
-    part.Material = Enum.Material.Neon
-    part.BrickColor = BrickColor.Random()
-    part.Anchored = true
-    part.CanCollide = false
-    part.Parent = workspace
-
-    table.insert(tornadoParts, part)
-
-    coroutine.wrap(function()
-        local angle = 0
-        while tornadoActive and part.Parent do
-            angle += 0.2
-            local radius = 5
-            local height = (i/3)
-            part.Position = root.Position + Vector3.new(
-                math.cos(angle)*radius,
-                height,
-                math.sin(angle)*radius
-            )
-            task.wait()
+-- TORNADO LOOP
+task.spawn(function()
+    while true do
+        task.wait()
+        if tornadoOn and root then
+            local t = tick()
+            local x = math.cos(t * tornadoSpeed) * tornadoRadius
+            local z = math.sin(t * tornadoSpeed) * tornadoRadius
+            root.Velocity = Vector3.new(x, 50, z)
         end
-        part:Destroy()
-    end)()
-end
-]], [[
-tornadoActive = false
-for _,p in pairs(tornadoParts) do
-    if p then p:Destroy() end
-end
-tornadoParts = {}
-]])
+    end
+end)
 
---------------------------------------------------
--- 🕊️ FLY
---------------------------------------------------
-local fly = false
-local bv
+-- FLY SYSTEM
+local bodyVelocity
 
-AddContent("Toogle", "Fly", [[
-fly = true
-bv = Instance.new("BodyVelocity")
-bv.MaxForce = Vector3.new(999999,999999,999999)
-bv.Parent = root
-
-while fly do
-    bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * 60
-    task.wait()
-end
-]], [[
-fly = false
-if bv then bv:Destroy() end
-]])
-
---------------------------------------------------
--- 🕳️ BLACK HOLE
---------------------------------------------------
-local blackholeActive = false
-local hole
-
-AddContent("Toogle", "Black Hole", [[
-blackholeActive = true
-
-hole = Instance.new("Part")
-hole.Shape = Enum.PartType.Ball
-hole.Size = Vector3.new(6,6,6)
-hole.Material = Enum.Material.Neon
-hole.BrickColor = BrickColor.new("Really black")
-hole.Anchored = true
-hole.CanCollide = false
-hole.Parent = workspace
-
-while blackholeActive do
-    hole.Position = root.Position + Vector3.new(0,5,0)
-
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") and v ~= hole then
-            local dist = (v.Position - hole.Position).Magnitude
-            if dist < 50 then
-                v.Velocity = (hole.Position - v.Position).Unit * 120
+task.spawn(function()
+    while true do
+        task.wait()
+        if flyOn and root then
+            if not bodyVelocity then
+                bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
+                bodyVelocity.Parent = root
+            end
+            
+            local moveDir = player.Character.Humanoid.MoveDirection
+            bodyVelocity.Velocity = moveDir * flySpeed + Vector3.new(0, flySpeed/2, 0)
+        else
+            if bodyVelocity then
+                bodyVelocity:Destroy()
+                bodyVelocity = nil
             end
         end
     end
+end)
 
-    task.wait()
-end
+-- UI
 
-hole:Destroy()
-]], [[
-blackholeActive = false
-if hole then hole:Destroy() end
+-- Tornado Toggle
+AddContent("Toogle", "Tornado ON/OFF", [[
+tornadoOn = not tornadoOn
 ]])
 
---------------------------------------------------
--- LABEL
---------------------------------------------------
+-- Speed Tornado
+local speedBox = AddContent("TextBox","Tornado Speed")
+speedBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(speedBox.Text)
+    if val then
+        tornadoSpeed = val
+    end
+end)
+
+-- Radius Tornado
+local radiusBox = AddContent("TextBox","Tornado Radius")
+radiusBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(radiusBox.Text)
+    if val then
+        tornadoRadius = val
+    end
+end)
+
+-- Fly Toggle
+AddContent("Toogle", "Fly ON/OFF", [[
+flyOn = not flyOn
+]])
+
+-- Fly Speed
+local flyBox = AddContent("TextBox","Fly Speed")
+flyBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local val = tonumber(flyBox.Text)
+    if val then
+        flySpeed = val
+    end
+end)
+
+-- Label
 local label = AddContent("TextLabel")
-label.Text = "Script by ChatGPT"
+label.Text = "Made by ChatGPT 😎"
