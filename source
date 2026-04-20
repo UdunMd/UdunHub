@@ -1,179 +1,97 @@
-local Orion = {}
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 
-function Orion:CreateOrion(orionName)
-    orionName = orionName or "Orion"
-    local isClosed = false
-    
-    local ScreenGui = Instance.new("ScreenGui")
-    local MainWhiteFrame = Instance.new("Frame")
-    local mainCorner = Instance.new("UICorner")
-    local MainWhiteFrame_2 = Instance.new("Frame")
-    local mainCorner_2 = Instance.new("UICorner")
-    local tabFrame = Instance.new("Frame")
-    local tabList = Instance.new("UIListLayout")
-    local tabPadd = Instance.new("UIPadding")
-    local header = Instance.new("Frame")
-    local mainCorner_4 = Instance.new("UICorner")
-    local libTitle = Instance.new("TextLabel")
-    local closeLib = Instance.new("ImageButton")
-    local elementContainer = Instance.new("Frame")
-    local mainCorner_5 = Instance.new("UICorner")
-    local pagesFolder = Instance.new("Folder")
+-- Window
+local Window = Rayfield:CreateWindow({
+    Name = "Tornado Controller",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "by ChatGPT",
+    ConfigurationSaving = {
+        Enabled = false
+    }
+})
 
-    ScreenGui.Parent = game.CoreGui
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Tab
+local Tab = Window:CreateTab("Tornado", 4483362458)
 
-    MainWhiteFrame.Parent = ScreenGui
-    MainWhiteFrame.BackgroundColor3 = Color3.fromRGB(139, 0, 23)
-    MainWhiteFrame.Size = UDim2.new(0, 528, 0, 310)
-    mainCorner.Parent = MainWhiteFrame
+-- Variabel
+local tornadoActive = false
+local radius = 30
+local height = 20
+local speed = 2
 
-    MainWhiteFrame_2.Parent = MainWhiteFrame
-    MainWhiteFrame_2.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    MainWhiteFrame_2.Size = UDim2.new(0, 525, 0, 310)
-    mainCorner_2.Parent = MainWhiteFrame_2
+-- Function Tornado
+local function startTornado()
+    local player = game.Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
 
-    tabFrame.Parent = MainWhiteFrame_2
-    tabFrame.BackgroundColor3 = Color3.fromRGB(33, 33, 33)
-    tabFrame.Size = UDim2.new(0, 100, 0, 309)
+    while tornadoActive do
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Anchored == false then
+                local distance = (obj.Position - root.Position).Magnitude
+                if distance < radius then
+                    local angle = tick() * speed
+                    local x = math.cos(angle) * distance
+                    local z = math.sin(angle) * distance
+                    local y = math.sin(tick()*2) * height
 
-    tabList.Parent = tabFrame
-    tabList.Padding = UDim.new(0, 2)
-
-    tabPadd.Parent = tabFrame
-    tabPadd.PaddingTop = UDim.new(0, 5)
-
-    header.Parent = MainWhiteFrame_2
-    header.BackgroundColor3 = Color3.fromRGB(181, 1, 31)
-    header.Size = UDim2.new(0, 408, 0, 43)
-
-    libTitle.Parent = header
-    libTitle.Text = orionName
-    libTitle.TextColor3 = Color3.new(1,1,1)
-
-    elementContainer.Parent = MainWhiteFrame_2
-    elementContainer.Position = UDim2.new(0.2,0,0.18,0)
-    elementContainer.Size = UDim2.new(0, 408, 0, 243)
-    mainCorner_5.Parent = elementContainer
-
-    pagesFolder.Parent = elementContainer
-
-    local SectionHandler = {}
-
-    function SectionHandler:CreateSection(secName)
-        local tabBtn = Instance.new("TextButton")
-        tabBtn.Parent = tabFrame
-        tabBtn.Text = secName
-
-        local newPage = Instance.new("ScrollingFrame")
-        newPage.Parent = pagesFolder
-        newPage.Size = UDim2.new(1,0,1,0)
-        newPage.Visible = false
-
-        tabBtn.MouseButton1Click:Connect(function()
-            for _,v in pairs(pagesFolder:GetChildren()) do
-                v.Visible = false
+                    obj.Velocity = Vector3.new(x, y + 50, z)
+                end
             end
-            newPage.Visible = true
-        end)
-
-        local ElementHandler = {}
-
-        function ElementHandler:Toggle(name, callback)
-            local btn = Instance.new("TextButton")
-            btn.Parent = newPage
-            btn.Size = UDim2.new(0,200,0,40)
-            btn.Text = name
-
-            local state = false
-            btn.MouseButton1Click:Connect(function()
-                state = not state
-                callback(state)
-            end)
         end
-
-        function ElementHandler:Slider(name, min, max, callback)
-            local btn = Instance.new("TextButton")
-            btn.Parent = newPage
-            btn.Size = UDim2.new(0,200,0,40)
-            btn.Text = name
-
-            btn.MouseButton1Click:Connect(function()
-                local val = math.random(min, max)
-                callback(val)
-                btn.Text = name.." : "..val
-            end)
-        end
-
-        return ElementHandler
-    end
-
-    return SectionHandler
-end
-
--- =========================
--- 🔥 TORNADO SYSTEM
--- =========================
-
-local Window = Orion:CreateOrion("Tornado Chaos")
-local Tab = Window:CreateSection("Main")
-
-local tornadoEnabled = false
-local speed = 5
-local radius = 10
-local parts = {}
-
-local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-
-local function createTornado()
-    for i = 1, 20 do
-        local p = Instance.new("Part")
-        p.Size = Vector3.new(1,1,1)
-        p.Anchored = true
-        p.CanCollide = false
-        p.Material = Enum.Material.Neon
-        p.Color = Color3.fromRGB(255,0,0)
-        p.Parent = workspace
-        table.insert(parts, p)
+        task.wait()
     end
 end
 
-local function removeTornado()
-    for _,p in pairs(parts) do
-        p:Destroy()
-    end
-    parts = {}
-end
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if tornadoEnabled and char and char:FindFirstChild("HumanoidRootPart") then
-        for i,p in ipairs(parts) do
-            local angle = tick()*speed + i
-            local x = math.cos(angle)*radius
-            local z = math.sin(angle)*radius
-            local y = i*1.5
-
-            p.Position = char.HumanoidRootPart.Position + Vector3.new(x,y,z)
+-- Toggle Tornado
+Tab:CreateToggle({
+    Name = "Aktifkan Tornado",
+    CurrentValue = false,
+    Callback = function(Value)
+        tornadoActive = Value
+        if Value then
+            task.spawn(startTornado)
         end
     end
-end)
+})
 
--- UI
-
-Tab:Toggle("Tornado ON/OFF", function(state)
-    tornadoEnabled = state
-    if state then
-        createTornado()
-    else
-        removeTornado()
+-- Slider Radius
+Tab:CreateSlider({
+    Name = "Radius",
+    Range = {10, 100},
+    Increment = 5,
+    CurrentValue = radius,
+    Callback = function(Value)
+        radius = Value
     end
-end)
+})
 
-Tab:Slider("Speed",1,20,function(val)
-    speed = val
-end)
+-- Slider Height
+Tab:CreateSlider({
+    Name = "Height",
+    Range = {10, 100},
+    Increment = 5,
+    CurrentValue = height,
+    Callback = function(Value)
+        height = Value
+    end
+})
 
-Tab:Slider("Radius",5,30,function(val)
-    radius = val
-end)
+-- Slider Speed
+Tab:CreateSlider({
+    Name = "Speed",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = speed,
+    Callback = function(Value)
+        speed = Value
+    end
+})
+
+-- Notify
+Rayfield:Notify({
+    Title = "Loaded!",
+    Content = "Tornado siap digunakan 🌪️",
+    Duration = 4
+})
