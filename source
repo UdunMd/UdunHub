@@ -7,7 +7,7 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle = "Loading...",
     LoadingSubtitle = "by ChatGPT",
     ConfigurationSaving = {
-        Enabled = false
+        Enabled = true
     }
 })
 
