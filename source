@@ -1,356 +1,220 @@
 --[[
-    Script: Slime RNG Auto Walk Map
-    GUI Library: Nemesis (Hydrogen / Codex UI Library)
-    Feature: Auto-walk around the map, collect items, farm mobs.
-
-    NOTE: This script uses the Nemesis UI Library.
-    Auto-walk path uses a Node-based pathfinding system.
+    Script: Auto Farm Slime Rng + WindUI
+    Fitur: Auto Click, Auto Upgrade, Stats Tracker
+    Gunakan di Map: Slime Rng (Pastikan Karakter sudah spawn)
 ]]
 
--- Check if Nemesis exists, if not, create the library structure.
-if not game:IsLoaded() then game.Loaded:Wait() end
+-- Library Loader
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua"))()
 
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local RootPart = Character:WaitForChild("HumanoidRootPart")
+-- Variables
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local uis = game:GetService("UserInputService")
 
--- Services
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local farming = false
+local autoUpgrade = false
+local currentDelay = 0.1
+local stats = {
+    clicks = 0,
+    slimes = 0
+}
 
--- Simple Nemesis UI Implementation (Template)
--- Since true Nemesis requires a specific loader, we will create a compatible UI structure.
-local Nemesis = {}
-do
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "NemesisHub"
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.Parent = game:GetService("CoreGui")
+-- Fungsi untuk Simulasi Click / Attack (Ganti sesuai mekanik map)
+local function performClick()
+    if not farming then return end
     
-    -- Main Frame
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 450, 0, 350)
-    mainFrame.Position = UDim2.new(0.5, -225, 0.5, -175)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.BackgroundTransparency = 0.05
-    mainFrame.ClipsDescendants = true
-    mainFrame.Parent = screenGui
-    
-    -- Corner
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = mainFrame
-    
-    -- Title Bar
-    local titleBar = Instance.new("Frame")
-    titleBar.Size = UDim2.new(1, 0, 0, 35)
-    titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    titleBar.BorderSizePixel = 0
-    titleBar.Parent = mainFrame
-    
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 8)
-    titleCorner.Parent = titleBar
-    
-    local titleText = Instance.new("TextLabel")
-    titleText.Size = UDim2.new(1, -50, 1, 0)
-    titleText.Position = UDim2.new(0, 10, 0, 0)
-    titleText.BackgroundTransparency = 1
-    titleText.Text = "Slime RNG | Auto Map Walker"
-    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleText.TextXAlignment = Enum.TextXAlignment.Left
-    titleText.Font = Enum.Font.GothamBold
-    titleText.TextSize = 14
-    titleText.Parent = titleBar
-    
-    -- Close Button
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 30, 1, 0)
-    closeBtn.Position = UDim2.new(1, -30, 0, 0)
-    closeBtn.BackgroundTransparency = 1
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 16
-    closeBtn.Parent = titleBar
-    closeBtn.MouseButton1Click:Connect(function()
-        screenGui:Destroy()
-    end)
-    
-    -- Make Draggable
-    local dragging = false
-    local dragInput, dragStart, startPos
-    
-    titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = mainFrame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    
-    titleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    
-    local function createButton(parent, text, yPos, callback)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.9, 0, 0, 35)
-        btn.Position = UDim2.new(0.05, 0, 0, yPos)
-        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(240, 240, 240)
-        btn.Font = Enum.Font.Gotham
-        btn.TextSize = 14
-        btn.BorderSizePixel = 0
-        btn.Parent = parent
-        
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 4)
-        btnCorner.Parent = btn
-        
-        btn.MouseButton1Click:Connect(callback)
-        return btn
-    end
-    
-    local function createLabel(parent, text, yPos, color)
-        local lbl = Instance.new("TextLabel")
-        lbl.Size = UDim2.new(0.9, 0, 0, 25)
-        lbl.Position = UDim2.new(0.05, 0, 0, yPos)
-        lbl.BackgroundTransparency = 1
-        lbl.Text = text
-        lbl.TextColor3 = color or Color3.fromRGB(200, 200, 200)
-        lbl.Font = Enum.Font.Gotham
-        lbl.TextSize = 12
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        lbl.Parent = parent
-        return lbl
-    end
-    
-    Nemesis.MainFrame = mainFrame
-    Nemesis.CreateButton = createButton
-    Nemesis.CreateLabel = createLabel
-end
-
--- Auto Walk Logic
-local AutoWalkEnabled = false
-local CurrentTarget = nil
-local WalkConnection = nil
-local Nodes = {} -- List of waypoints (Vector3)
-
--- Common Slime RNG Map Locations (Customize these!)
--- Use Vector3.new(x, y, z)
-local function getMapNodes()
-    -- Note: These are EXAMPLE coordinates.
-    -- You MUST replace these with actual Slime RNG map coordinates.
-    -- How to get coords: Print RootPart.Position while standing at key spots.
-    return {
-        { Name = "Center", Pos = Vector3.new(0, 5, 0) },
-        { Name = "Slime Shop", Pos = Vector3.new(50, 5, 20) },
-        { Name = "Upgrade Area", Pos = Vector3.new(-30, 5, -40) },
-        { Name = "Farm Spot 1", Pos = Vector3.new(120, 5, 50) },
-        { Name = "Egg Area", Pos = Vector3.new(-80, 5, 90) },
-        { Name = "Boss Arena", Pos = Vector3.new(200, 5, -100) }
-    }
-end
-
--- Function to move to a position
-local function moveToPosition(position)
-    if not Humanoid or not RootPart then return false end
-    
-    -- Ensure Humanoid is still valid
-    if Humanoid.Health <= 0 then
-        return false
-    end
-    
-    -- Tween movement or use Humanoid:MoveTo
-    -- Using Humanoid:MoveTo is generally safer
-    Humanoid:MoveTo(position)
-    
-    -- Optional: Auto-jump for obstacles
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if not Humanoid or Humanoid.Health <= 0 then
-            if connection then connection:Disconnect() end
-            return
-        end
-        
-        local dist = (RootPart.Position - position).Magnitude
-        if dist < 5 then
-            Humanoid:MoveTo(RootPart.Position) -- Stop moving
-            if connection then connection:Disconnect() end
-        end
-        
-        -- Attempt to jump if stuck (basic)
-        if Humanoid.FloorMaterial == Enum.Material.Air and Humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
-            Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end)
-    
-    return true
-end
-
--- The Auto-Walk Loop
-local function startAutoWalk()
-    if WalkConnection then WalkConnection:Disconnect() end
-    
-    local nodesTable = getMapNodes()
-    local nodeIndex = 1
-    
-    WalkConnection = RunService.RenderStepped:Connect(function()
-        if not AutoWalkEnabled then return end
-        
-        -- Refresh character models
-        Character = Player.Character
-        if not Character or Character:FindFirstChild("Humanoid") == nil then
-            Character = Player.CharacterAdded:Wait()
-            Humanoid = Character:WaitForChild("Humanoid")
-            RootPart = Character:WaitForChild("HumanoidRootPart")
-            return
-        end
-        
-        Humanoid = Character:FindFirstChild("Humanoid")
-        RootPart = Character:FindFirstChild("HumanoidRootPart")
-        if not Humanoid or Humanoid.Health <= 0 then return end
-        
-        local targetNode = nodesTable[nodeIndex]
-        if not targetNode then
-            -- Loop back to start
-            nodeIndex = 1
-            targetNode = nodesTable[nodeIndex]
-        end
-        
-        local targetPos = targetNode.Pos
-        local distance = (RootPart.Position - targetPos).Magnitude
-        
-        if distance < 7 then
-            -- Reached node, move to next
-            nodeIndex = nodeIndex + 1
+    -- Method 1: Kirim remote event (jika map menggunakan remote)
+    -- Cek apakah ada RemoteEvent yang umum
+    local success, err = pcall(function()
+        -- Ini adalah contoh umum untuk game RNG, sesuaikan dengan nama remote di map
+        local remote = game:GetService("ReplicatedStorage"):FindFirstChild("ClickRequest") or 
+                       game:GetService("ReplicatedStorage"):FindFirstChild("Attack")
+        if remote then
+            remote:FireServer()
         else
-            -- Move towards node
-            Humanoid:MoveTo(targetPos)
-            
-            -- Auto-collect nearby loot (Common requirement for Slime RNG)
-            -- Attempts to touch proximity prompts or collect items automatically
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v:IsA("ProximityPrompt") or (v.Name:lower():find("loot") or v.Name:lower():find("item") or v.Name:lower():find("drop")) then
-                    if v:IsA("BasePart") and (v.Position - RootPart.Position).Magnitude < 15 then
-                        fireproximityprompt(v) -- Use fireproximityprompt for collection
-                    elseif v:IsA("ProximityPrompt") and v.Parent and v.Parent:IsA("BasePart") then
-                        local part = v.Parent
-                        if (part.Position - RootPart.Position).Magnitude < 15 then
-                            fireproximityprompt(v)
-                        end
-                    end
+            -- Method 2: Simulasi mouse click ke tombol di layar (jika ada GUI Button)
+            local screenGui = player.PlayerGui:FindFirstChild("MainGui")
+            if screenGui then
+                local button = screenGui:FindFirstChild("ClickButton", true)
+                if button and button:IsA("TextButton") then
+                    button:CaptureMouse()
+                    button:InputBegin(Enum.UserInputType.MouseButton1)
+                    task.wait(0.05)
+                    button:InputEnd(Enum.UserInputType.MouseButton1)
                 end
             end
         end
     end)
-end
-
-local function stopAutoWalk()
-    if WalkConnection then
-        WalkConnection:Disconnect()
-        WalkConnection = nil
-    end
-    if Humanoid then
-        Humanoid:MoveTo(RootPart.Position) -- Stop moving
-    end
-end
-
--- Toggle Auto Walk
-local function toggleAutoWalk()
-    AutoWalkEnabled = not AutoWalkEnabled
     
-    if AutoWalkEnabled then
-        startAutoWalk()
-        StatusLabel.Text = "Status: Walking..."
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    else
-        stopAutoWalk()
-        StatusLabel.Text = "Status: Idle"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    if success then
+        stats.clicks = stats.clicks + 1
+        -- Update UI
+        if window and window.updateStats then window:updateStats(stats) end
     end
 end
 
--- UI Building
-local currentY = 50
-
--- Title area spacing
-local titleDivider = Instance.new("Frame")
-titleDivider.Size = UDim2.new(1, 0, 0, 1)
-titleDivider.Position = UDim2.new(0, 0, 0, 35)
-titleDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-titleDivider.BorderSizePixel = 0
-titleDivider.Parent = Nemesis.MainFrame
-
--- Status Label
-local StatusLabel = Nemesis.CreateLabel(Nemesis.MainFrame, "Status: Idle", currentY, Color3.fromRGB(255, 100, 100))
-currentY = currentY + 30
-
--- Toggle Button
-local toggleBtn = Nemesis.CreateButton(Nemesis.MainFrame, "Start Auto Walk", currentY, function()
-    toggleAutoWalk()
-    if AutoWalkEnabled then
-        toggleBtn.Text = "Stop Auto Walk"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
-    else
-        toggleBtn.Text = "Start Auto Walk"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    end
-end)
-currentY = currentY + 45
-
--- Waypoint List Label
-local waypointHeader = Nemesis.CreateLabel(Nemesis.MainFrame, "Waypoints:", currentY, Color3.fromRGB(255, 200, 100))
-currentY = currentY + 20
-
--- Display waypoints
-local waypoints = getMapNodes()
-for i, node in ipairs(waypoints) do
-    local wpLabel = Nemesis.CreateLabel(Nemesis.MainFrame, i .. ". " .. node.Name, currentY, Color3.fromRGB(180, 180, 180))
-    currentY = currentY + 18
-end
-
--- Credit Label
-local creditLabel = Instance.new("TextLabel")
-creditLabel.Size = UDim2.new(1, 0, 0, 25)
-creditLabel.Position = UDim2.new(0, 0, 1, -30)
-creditLabel.BackgroundTransparency = 1
-creditLabel.Text = "Nemesis UI | Slime RNG Auto Walk"
-creditLabel.TextColor3 = Color3.fromRGB(100, 100, 120)
-creditLabel.Font = Enum.Font.Gotham
-creditLabel.TextSize = 11
-creditLabel.TextXAlignment = Enum.TextXAlignment.Center
-creditLabel.Parent = Nemesis.MainFrame
-
--- Resize frame to fit content
-Nemesis.MainFrame.Size = UDim2.new(0, 450, 0, currentY + 50)
-
--- Character Respawn Handler
-Player.CharacterAdded:Connect(function(newChar)
-    Character = newChar
-    Humanoid = Character:WaitForChild("Humanoid")
-    RootPart = Character:WaitForChild("HumanoidRootPart")
-    
-    -- If auto-walk was enabled, restart it
-    if AutoWalkEnabled then
-        stopAutoWalk()
-        startAutoWalk()
+-- Auto Click Loop
+spawn(function()
+    while true do
+        if farming then
+            performClick()
+            task.wait(currentDelay)
+        else
+            task.wait(0.5)
+        end
     end
 end)
 
-print("Nemesis Slime RNG Script Loaded Successfully!")
+-- Auto Upgrade Loop (Upgrade otomatis saat uang cukup)
+local function autoUpgradeLoop()
+    while true do
+        if autoUpgrade then
+            -- Cari tombol upgrade (contoh: beli pickaxe, upgrade multiplier)
+            local success, err = pcall(function()
+                -- Ganti path ini sesuai UI map
+                local upgradeFrame = player.PlayerGui:FindFirstChild("ShopGui")
+                if upgradeFrame then
+                    local upgradeButton = upgradeFrame:FindFirstChild("UpgradeButton", true)
+                    if upgradeButton and upgradeButton:IsA("TextButton") and upgradeButton.Visible then
+                        upgradeButton:CaptureMouse()
+                        upgradeButton:InputBegin(Enum.UserInputType.MouseButton1)
+                        task.wait(0.05)
+                        upgradeButton:InputEnd(Enum.UserInputType.MouseButton1)
+                        stats.slimes = stats.slimes + 1
+                        if window and window.updateStats then window:updateStats(stats) end
+                    end
+                end
+            end)
+        end
+        task.wait(1) -- Cek upgrade tiap detik
+    end
+end)
+spawn(autoUpgradeLoop)
+
+-- UI Creation using WindUI
+local window = Library:createWindow({
+    Text = "Slime Rng | Auto Farm Hub",
+    Size = "400x480",
+    ThemeColor = Color3.fromRGB(46, 204, 113) -- Hijau seperti slime
+})
+
+-- Tab: Main
+local mainTab = window:addTab({
+    Text = "Farm"
+})
+
+-- Tab: Settings
+local settingsTab = window:addTab({
+    Text = "Settings"
+})
+
+-- Tab: Stats
+local statsTab = window:addTab({
+    Text = "Stats"
+})
+
+-- Isi Tab Main
+local mainSection = mainTab:addSection({
+    Text = "Control Panel"
+})
+
+mainSection:addToggle({
+    Text = "Auto Farm (Auto Click)",
+    Default = false,
+    Callback = function(v)
+        farming = v
+        if v then
+            print("Auto Farm Started")
+        else
+            print("Auto Farm Stopped")
+        end
+    end
+})
+
+mainSection:addSlider({
+    Text = "Click Delay (s)",
+    Default = 0.1,
+    Min = 0.05,
+    Max = 2,
+    Increase = 0.01,
+    Callback = function(v)
+        currentDelay = v
+    end
+})
+
+mainSection:addButton({
+    Text = "Click 1x (Manual)",
+    Callback = function()
+        performClick()
+    end
+})
+
+local upgradeSection = mainTab:addSection({
+    Text = "Auto Upgrade"
+})
+
+upgradeSection:addToggle({
+    Text = "Auto Buy Upgrade",
+    Default = false,
+    Callback = function(v)
+        autoUpgrade = v
+    end
+})
+
+-- Isi Tab Settings
+local delaySection = settingsTab:addSection({
+    Text = "Advanced"
+})
+
+delaySection:addSlider({
+    Text = "UI Animation Speed",
+    Default = 0.3,
+    Min = 0.1,
+    Max = 1,
+    Increase = 0.05,
+    Callback = function(v)
+        -- Untuk mengubah animasi UI jika perlu
+    end
+})
+
+-- Isi Tab Stats
+local statsSection = statsTab:addSection({
+    Text = "Live Statistics"
+})
+
+-- Method custom untuk update stats
+local statsLabel = statsSection:addLabel({
+    Text = "Total Clicks: 0\nTotal Upgrades: 0"
+})
+
+-- Fungsi update stats yang bisa dipanggil dari manapun
+function window:updateStats(s)
+    if statsLabel then
+        statsLabel:setText("Total Clicks: " .. s.clicks .. "\nTotal Upgrades: " .. s.slimes)
+    end
+end
+
+-- Refresh stats setiap detik
+spawn(function()
+    while true do
+        if window and window.updateStats then
+            window:updateStats(stats)
+        end
+        task.wait(1)
+    end
+end)
+
+-- Notifikasi awal
+window:show()
+Library:notification({
+    Text = "Script Loaded!",
+    Duration = 2,
+    Type = "success"
+})
+
+-- Cleanup function (opsional)
+game:GetService("Players").LocalPlayer.OnTeleport:Connect(function()
+    farming = false
+    if window and window.hide then window:hide() end
+end)
