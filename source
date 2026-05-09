@@ -1,78 +1,28 @@
--- Rayfield 2026 Hub Compact
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Players, RunService, Lighting, Workspace, UIS = game:GetService("Players"), game:GetService("RunService"), game:GetService("Lighting"), game:GetService("Workspace"), game:GetService("UserInputService")
-local player = Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local humanoid = char:WaitForChild("Humanoid")
-local hrp = char:WaitForChild("HumanoidRootPart")
+local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Ice-Hub-Library/refs/heads/main/Source"))()
 
--- Utils
-local function rainbowParts(parts)
-    for _, p in pairs(parts) do
-        if p:IsA("BasePart") then
-            p.Color = Color3.fromHSV(tick()%10/10,1,1)
-        end
-    end
-end
+local MainWindow = IceHub.CreateMain("Script Name", "v1.0.0")
 
--- Window
-local Window = Rayfield:CreateWindow({
-    Name="Universal Hub 2026",
-    LoadingTitle="Rayfield Interface",
-    LoadingSubtitle="by NEDUKAS152015",
-    ConfigurationSaving={Enabled=false}
-})
+local MainTab = MainWindow:NewTab("Tab", "MainPage")
 
--- Tabs
-local MainTab = Window:CreateTab("Main Features")
-local CharTab = Window:CreateTab("Character Settings")
-local EarthTab = Window:CreateTab("Earth Settings")
+local MainSection = MainTab:NewSection()
 
--- ===== Main Features =====
-MainTab:CreateSlider({Name="WalkSpeed",Range={16,500},Increment=1,CurrentValue=16,Callback=function(v) humanoid.WalkSpeed=v end})
-MainTab:CreateSlider({Name="JumpPower",Range={50,500},Increment=1,CurrentValue=50,Callback=function(v) humanoid.JumpPower=v end})
-MainTab:CreateButton({Name="Nuke (Client Side)",Callback=function()
-    local hrp=char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        local e=Instance.new("Explosion")
-        e.Position=hrp.Position;e.BlastRadius=500;e.BlastPressure=1e6;e.Parent=Workspace
-        Rayfield:Notify({Title="Nuke",Content="Nuke deployed!",Duration=3})
-    end
-end})
-
--- ===== Character Settings =====
-local godMode=false; local noclip=false; local rainbowChar=false; local rainbowWalls=false
-CharTab:CreateToggle({Name="God Mode",CurrentValue=false,Callback=function(v) godMode=v end})
-CharTab:CreateToggle({Name="Noclip",CurrentValue=false,Callback=function(v) noclip=v end})
-CharTab:CreateToggle({Name="Rainbow Character",CurrentValue=false,Callback=function(v) rainbowChar=v end})
-CharTab:CreateToggle({Name="Rainbow Walls",CurrentValue=false,Callback=function(v) rainbowWalls=v end})
-
--- ===== Earth Settings =====
-local removeFog=false; local addFog=false; local rainbowEnv=false
-EarthTab:CreateToggle({Name="Remove Fog",CurrentValue=false,Callback=function(v) removeFog=v; if v then Lighting.FogEnd=100000 else Lighting.FogEnd=1000 end end})
-EarthTab:CreateToggle({Name="Add Fog",CurrentValue=false,Callback=function(v) addFog=v; if v then Lighting.FogEnd=200 else Lighting.FogEnd=1000 end end})
-EarthTab:CreateSlider({Name="Time",Range={0,24},Increment=0.1,CurrentValue=Lighting.ClockTime,Callback=function(v) Lighting.ClockTime=v end})
-EarthTab:CreateToggle({Name="Rainbow Environment",CurrentValue=false,Callback=function(v) rainbowEnv=v end})
-
--- ===== RunService Loop =====
-RunService.RenderStepped:Connect(function()
-    -- Character
-    if godMode and humanoid then
-        humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead,false)
-        humanoid.MaxHealth=math.huge; humanoid.Health=math.huge
-    end
-    if noclip then
-        for _, p in pairs(char:GetChildren()) do if p:IsA("BasePart") then p.CanCollide=false end end
-    end
-    if rainbowChar then rainbowParts(char:GetChildren()) end
-    if rainbowWalls then
-        for _, w in pairs(Workspace:GetChildren()) do
-            if w:IsA("BasePart") then w.Color=Color3.fromHSV(tick()%10/10,1,1) end
-        end
-    end
-    -- Environment
-    if rainbowEnv then
-        Lighting.Ambient = Color3.fromHSV(tick()%10/10,1,1)
-        Lighting.OutdoorAmbient = Color3.fromHSV(tick()%10/10,1,1)
-    end
+local AutoSellToggle = MainSection:NewToggle("Toggle", "Description", function(state)
 end)
+
+MainSection:NewButtonCooldown("Cooldown Button", "Description", 5,function()
+end)
+
+MainSection:NewButton("Button", "Description", function()
+end)
+
+MainSection:NewLabel("Label")
+
+MainSection:NewSlider("Walk Speed", "Adjust your walk speed", 16, 200, function(value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end)
+
+local ItemDropdown = MainSection:NewSearchDropdown("Select Item", "Search for items to farm", "Type to search...",{"Sword", "Shield", "Potion", "Armor", "Boots", "Helmet"}, function(selected)
+ end)
+
+MainSection:NewFocusTextBox("Player Name", "Enter player name to teleport to", nil, function(text)
+    end)
