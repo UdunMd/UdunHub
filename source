@@ -1,18 +1,27 @@
 -- Load WMacLib
 local WMacLib = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Wicikk/WMacLib/main/WMacLib.lua"))()
 
--- Fungsi untuk mencari item drop terdekat
+-- Variabel untuk auto walk
+local autoWalkEnabled = false
+local currentTarget = nil
+local walkToConnection = nil
+local player = game.Players.LocalPlayer
+
+-- Fungsi untuk mencari item drop terdekat (sesuaikan nama item dengan game Slime Rng)
 local function getNearestDrop()
     local nearest = nil
     local shortestDistance = math.huge
-    local character = game.Players.LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then 
+        return nil 
+    end
     
     local hrp = character.HumanoidRootPart
+    -- Cari semua part di workspace
     for _, v in pairs(workspace:GetDescendants()) do
-        -- Sesuaikan "Drop" dengan nama sebenarnya item drop di game Slime Rng.
-        -- Contoh: jika item adalah model dengan nama "Drop" atau memiliki part bernama "Handle"
-        if v:IsA("BasePart") and v.Name == "Drop" then -- Ganti "Drop" dengan nama item yang benar!
+        -- ⚠️ PERHATIAN: Ganti "Drop" dengan nama item yang benar di game Slime Rng!
+        -- Contoh: "Coin", "Gem", "ItemDrop", "SlimeLoot", dll.
+        if v:IsA("BasePart") and (v.Name:lower():find("drop") or v.Name:lower():find("item") or v.Name:lower():find("loot")) then
             local distance = (hrp.Position - v.Position).Magnitude
             if distance < shortestDistance then
                 shortestDistance = distance
@@ -23,37 +32,52 @@ local function getNearestDrop()
     return nearest
 end
 
--- Variabel untuk loop auto-walk
-local autoWalkEnabled = false
-local currentTarget = nil
-local walkToConnection = nil
+-- Fungsi untuk menghentikan auto walk
+local function stopAutoWalk()
+    autoWalkEnabled = false
+    if walkToConnection then
+        walkToConnection:Disconnect()
+        walkToConnection = nil
+    end
+    currentTarget = nil
+    -- Hentikan karakter
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid:MoveTo(character.HumanoidRootPart.Position)
+    end
+end
 
--- Fungsi untuk auto-walk ke item terdekat
-local function startAutoWalkToDrops()
-    if walkToConnection then walkToConnection:Disconnect() end
+-- Fungsi untuk memulai auto walk
+local function startAutoWalk()
+    if walkToConnection then 
+        walkToConnection:Disconnect() 
+    end
+    
     walkToConnection = game:GetService("RunService").RenderStepped:Connect(function()
         if not autoWalkEnabled then return end
         
+        -- Cek karakter masih ada
+        local character = player.Character
+        if not character or not character:FindFirstChild("Humanoid") or not character:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        
+        local humanoid = character.Humanoid
+        local hrp = character.HumanoidRootPart
         local target = getNearestDrop()
-        if target and target.Parent then
+        
+        if target and target.Parent and target:IsDescendantOf(workspace) then
             currentTarget = target
-            local character = game.Players.LocalPlayer.Character
-            if character and character:FindFirstChild("Humanoid") and character:FindFirstChild("HumanoidRootPart") then
-                local humanoid = character.Humanoid
-                local hrp = character.HumanoidRootPart
-                
-                -- Posisi target + sedikit offset Y agar berjalan di atasnya
-                local targetPos = target.Position + Vector3.new(0, 3, 0)
-                local distance = (hrp.Position - target.Position).Magnitude
-                
-                if distance > 5 then
-                    -- Berjalan menuju target
-                    humanoid:MoveTo(targetPos)
-                else
-                    -- Jika sudah cukup dekat, hentikan dan tunggu drop berikutnya
-                    humanoid:MoveTo(hrp.Position)
-                    task.wait(0.5)
-                end
+            local distance = (hrp.Position - target.Position).Magnitude
+            
+            if distance > 4 then
+                -- Berjalan menuju target
+                humanoid:MoveTo(target.Position)
+                humanoid.AutoRotate = true
+            else
+                -- Jika sudah dekat, berhenti sebentar
+                humanoid:MoveTo(hrp.Position)
+                task.wait(0.3)
             end
         else
             currentTarget = nil
@@ -61,46 +85,42 @@ local function startAutoWalkToDrops()
     end)
 end
 
--- Membuat Window UI
+-- Membuat GUI Window
 local Window = WMacLib:Window({
     Title = "Slime Rng - Auto Item Drop",
     Subtitle = "Auto walk to nearest drop",
-    Size = UDim2.fromOffset(450, 300),
+    Size = UDim2.fromOffset(450, 350),
     AcrylicBlur = true,
     ShowUserInfo = true,
     Keybind = Enum.KeyCode.RightControl,
 })
 
--- Membuat Tab utama
+-- Membuat Tab
 local mainTab = Window:Tab({ Name = "Auto Farm", Icon = "lucide/droplet" })
 
 -- Membuat Section
 local mainSection = mainTab:Section({})
 
--- Toggle untuk menyalakan auto-walk
-mainSection:Toggle({
-    Name = "Auto Walk to Drop Items",
+-- Header
+mainSection:Header({
+    Text = "Auto Item Collector"
+})
+
+-- Toggle untuk auto walk
+local autoWalkToggle = mainSection:Toggle({
+    Name = "Auto Walk to Items",
     Default = false,
     Callback = function(value)
         autoWalkEnabled = value
         if autoWalkEnabled then
-            startAutoWalkToDrops()
+            startAutoWalk()
             Window:Notify({
                 Title = "Auto Walk",
-                Description = "Auto walk ENABLED",
+                Description = "Auto walk ENABLED - Looking for items...",
                 Lifetime = 3
             })
         else
-            if walkToConnection then
-                walkToConnection:Disconnect()
-                walkToConnection = nil
-            end
-            currentTarget = nil
-            -- Hentikan karakter
-            local character = game.Players.LocalPlayer.Character
-            if character and character:FindFirstChild("Humanoid") then
-                character.Humanoid:MoveTo(character.HumanoidRootPart.Position)
-            end
+            stopAutoWalk()
             Window:Notify({
                 Title = "Auto Walk",
                 Description = "Auto walk DISABLED",
@@ -108,70 +128,142 @@ mainSection:Toggle({
             })
         end
     end,
-}, "AutoWalkToggle")
+})
 
--- Label untuk menampilkan target saat ini
+-- Label untuk status
+local statusLabel = mainSection:Label({
+    Text = "Status: Idle"
+})
+
+-- Label untuk target
 local targetLabel = mainSection:Label({
     Text = "Target: None"
 })
 
--- Update label target setiap detik
+-- Update status label setiap detik
 task.spawn(function()
     while true do
         task.wait(1)
-        if autoWalkEnabled and currentTarget and currentTarget.Parent then
-            local distance = (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and currentTarget.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-            targetLabel:SetName("Target: " .. currentTarget.Name .. " | Distance: " .. math.floor(distance) .. " studs")
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            statusLabel:SetName("Status: Waiting for character...")
+            targetLabel:SetName("Target: None")
         elseif autoWalkEnabled then
-            targetLabel:SetName("Target: Searching...")
+            statusLabel:SetName("Status: <font color='rgb(73, 230, 133)'>● Running</font>")
+            if currentTarget and currentTarget.Parent then
+                local distance = (player.Character.HumanoidRootPart.Position - currentTarget.Position).Magnitude
+                targetLabel:SetName("Target: " .. currentTarget.Name .. " | Distance: " .. math.floor(distance) .. " studs")
+            else
+                targetLabel:SetName("Target: Searching... (no items found)")
+            end
         else
+            statusLabel:SetName("Status: ● Stopped")
             targetLabel:SetName("Target: None (Disabled)")
         end
     end
 end)
 
--- Button untuk refresh/scan ulang
-mainSection:Button({
-    Name = "Force Refresh Scan",
-    Callback = function()
-        local nearest = getNearestDrop()
-        if nearest then
-            Window:Notify({
-                Title = "Scan Result",
-                Description = "Nearest drop found: " .. nearest.Name,
-                Lifetime = 3
-            })
-        else
-            Window:Notify({
-                Title = "Scan Result",
-                Description = "No drop items found nearby!",
-                Lifetime = 3
-            })
-        end
-    end,
-})
+-- Divider
+mainSection:Divider()
 
--- Slider untuk kecepatan berjalan (opsional)
+-- Slider untuk kecepatan jalan
 local speedSlider = mainSection:Slider({
     Name = "Walk Speed",
     Default = 16,
     Minimum = 10,
-    Maximum = 50,
+    Maximum = 100,
     Precision = 0,
     DisplayMethod = "Value",
+    Suffix = "",
     Callback = function(value)
-        local char = game.Players.LocalPlayer.Character
+        local char = player.Character
         if char and char:FindFirstChild("Humanoid") then
             char.Humanoid.WalkSpeed = value
         end
     end,
 })
 
--- Inisialisasi walk speed saat script dijalankan
-task.spawn(function()
-    while not game.Players.LocalPlayer.Character do task.wait() end
-    local char = game.Players.LocalPlayer.Character
+-- Tombol refresh scan
+mainSection:Button({
+    Name = "Force Scan Items",
+    Callback = function()
+        local nearest = getNearestDrop()
+        if nearest then
+            Window:Notify({
+                Title = "Scan Result",
+                Description = "Found: " .. nearest.Name .. " at " .. math.floor((player.Character and player.Character.HumanoidRootPart and (nearest.Position - player.Character.HumanoidRootPart.Position).Magnitude or 0)) .. " studs",
+                Lifetime = 4
+            })
+            targetLabel:SetName("Target: " .. nearest.Name)
+        else
+            Window:Notify({
+                Title = "Scan Result",
+                Description = "No items found nearby!",
+                Lifetime = 3
+            })
+            targetLabel:SetName("Target: None found")
+        end
+    end,
+})
+
+-- Divider
+mainSection:Divider()
+
+-- Informasi cara penggunaan
+mainSection:Paragraph({
+    Header = "How to Use",
+    Body = "1. Toggle ON 'Auto Walk to Items'\n2. Character will automatically walk to nearest item drop\n3. Adjust walk speed as needed\n\n⚠️ IMPORTANT: If items are not detected, you need to change the item name filter in the script (line ~22-26)"
+})
+
+-- Slider untuk jarak pickup (opsional)
+local distanceSlider = mainSection:Slider({
+    Name = "Pickup Distance",
+    Default = 5,
+    Minimum = 3,
+    Maximum = 15,
+    Precision = 1,
+    DisplayMethod = "Value",
+    Callback = function(value)
+        -- Jarak ini akan digunakan di fungsi startAutoWalk
+        -- Untuk mengubahnya, edit nilai '4' di line ~79
+        Window:Notify({
+            Title = "Info",
+            Description = "Distance set to " .. value .. " (restart toggle to apply)",
+            Lifetime = 2
+        })
+    end,
+})
+
+-- Inisialisasi walk speed saat character spawn
+player.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
     if char and char:FindFirstChild("Humanoid") then
         speedSlider:UpdateValue(char.Humanoid.WalkSpeed)
     end
+    -- Jika auto walk sedang aktif saat respawn, restart
+    if autoWalkEnabled then
+        stopAutoWalk()
+        task.wait(0.5)
+        startAutoWalk()
+    end
 end)
+
+-- Jika character sudah ada, set speed
+if player.Character and player.Character:FindFirstChild("Humanoid") then
+    speedSlider:UpdateValue(player.Character.Humanoid.WalkSpeed)
+end
+
+-- Tombol untuk membuka dokumentasi
+mainSection:Button({
+    Name = "How to Change Item Name Filter",
+    Callback = function()
+        Window:Dialog({
+            Title = "Change Item Detection",
+            Description = "To detect different items:\n\n1. Open game Explorer (View → Explorer)\n2. Find an item drop on ground\n3. Note its Name property\n4. Edit line ~22-26 in script\n5. Change 'drop' to the item name\n\nCurrent filter: contains 'drop', 'item', 'loot'",
+            Buttons = {
+                { Name = "OK" }
+            }
+        })
+    end,
+})
+
+print("Auto Item Drop script loaded! Use RightControl to toggle GUI")
