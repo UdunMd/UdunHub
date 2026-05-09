@@ -1,11 +1,8 @@
--- LOADING SCREEN WITH UDUNHUB LOGO
+-- LOADING SCREEN WITH UDUNHUB LOGO & ANIMATION (NO BAR)
 local LoadingScreen = Instance.new("ScreenGui")
 local Background = Instance.new("Frame")
 local Logo = Instance.new("TextLabel")
-local LoadingBar = Instance.new("Frame")
-local LoadingFill = Instance.new("Frame")
-local LoadingText = Instance.new("TextLabel")
-local LoadingPercent = Instance.new("TextLabel")
+local SubText = Instance.new("TextLabel")
 
 LoadingScreen.Name = "LoadingScreen"
 LoadingScreen.Parent = game.CoreGui
@@ -18,11 +15,11 @@ Background.Parent = LoadingScreen
 Background.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
 Background.Size = UDim2.new(1, 0, 1, 0)
 
--- UdunHub Logo
+-- UdunHub Logo (dengan animasi)
 Logo.Name = "Logo"
 Logo.Parent = Background
 Logo.BackgroundTransparency = 1
-Logo.Position = UDim2.new(0.5, -150, 0.2, 0)
+Logo.Position = UDim2.new(0.5, -150, 0.4, 0)  -- posisi sedikit di tengah atas
 Logo.Size = UDim2.new(0, 300, 0, 60)
 Logo.Font = Enum.Font.GothamBold
 Logo.Text = "UDUNHUB"
@@ -32,76 +29,57 @@ Logo.TextScaled = true
 Logo.TextStrokeTransparency = 0.5
 Logo.TextStrokeColor3 = Color3.fromRGB(0, 100, 150)
 
--- Loading Bar Container
-LoadingBar.Name = "LoadingBar"
-LoadingBar.Parent = Background
-LoadingBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-LoadingBar.BorderSizePixel = 0
-LoadingBar.Position = UDim2.new(0.5, -150, 0.5, -15)
-LoadingBar.Size = UDim2.new(0, 300, 0, 30)
+-- Teks tambahan (opsional, tanpa bar)
+SubText.Name = "SubText"
+SubText.Parent = Background
+SubText.BackgroundTransparency = 1
+SubText.Position = UDim2.new(0.5, -100, 0.55, 0)
+SubText.Size = UDim2.new(0, 200, 0, 30)
+SubText.Font = Enum.Font.Gotham
+SubText.Text = "Memuat..."
+SubText.TextColor3 = Color3.fromRGB(180, 180, 200)
+SubText.TextSize = 16
+SubText.TextScaled = false
 
--- Loading Fill
-LoadingFill.Name = "LoadingFill"
-LoadingFill.Parent = LoadingBar
-LoadingFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-LoadingFill.BorderSizePixel = 0
-LoadingFill.Size = UDim2.new(0, 0, 1, 0)
+-- --- ANIMASI LOGO (PULSING SIZE & WARNA) ---
+local TweenService = game:GetService("TweenService")
 
--- Loading Text
-LoadingText.Name = "LoadingText"
-LoadingText.Parent = Background
-LoadingText.BackgroundTransparency = 1
-LoadingText.Position = UDim2.new(0.5, -150, 0.5, -50)
-LoadingText.Size = UDim2.new(0, 300, 0, 30)
-LoadingText.Font = Enum.Font.GothamBold
-LoadingText.Text = "Loading UdunHub..."
-LoadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingText.TextSize = 18
-LoadingText.TextScaled = false
+-- Ukuran asli dan ukuran membesar
+local originalSize = Logo.Size
+local biggerSize = UDim2.new(0, 330, 0, 66)
+local originalColor = Logo.TextColor3
+local brighterColor = Color3.fromRGB(0, 230, 255)
 
--- Loading Percent
-LoadingPercent.Name = "LoadingPercent"
-LoadingPercent.Parent = Background
-LoadingPercent.BackgroundTransparency = 1
-LoadingPercent.Position = UDim2.new(0.5, -50, 0.5, 30)
-LoadingPercent.Size = UDim2.new(0, 100, 0, 25)
-LoadingPercent.Font = Enum.Font.Gotham
-LoadingPercent.Text = "0%"
-LoadingPercent.TextColor3 = Color3.fromRGB(200, 200, 200)
-LoadingPercent.TextSize = 14
+-- Konfigurasi tween
+local tweenInfoUp = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+local tweenInfoDown = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
 
--- Animate Loading Bar
-local function UpdateLoading(progress, message)
-    LoadingFill:TweenSize(UDim2.new(progress, 0, 1, 0), "Out", "Linear", 0.1)
-    LoadingPercent.Text = math.floor(progress * 100) .. "%"
-    if message then
-        LoadingText.Text = message
+-- Fungsi untuk animasi berulang
+local function animateLogo()
+    while LoadingScreen and LoadingScreen.Parent do
+        -- Perbesar dan ubah warna
+        local sizeTweenUp = TweenService:Create(Logo, tweenInfoUp, {Size = biggerSize})
+        local colorTweenUp = TweenService:Create(Logo, tweenInfoUp, {TextColor3 = brighterColor})
+        sizeTweenUp:Play()
+        colorTweenUp:Play()
+        wait(0.6)
+        
+        -- Kembalikan ke ukuran dan warna semula
+        local sizeTweenDown = TweenService:Create(Logo, tweenInfoDown, {Size = originalSize})
+        local colorTweenDown = TweenService:Create(Logo, tweenInfoDown, {TextColor3 = originalColor})
+        sizeTweenDown:Play()
+        colorTweenDown:Play()
+        wait(0.6)
     end
 end
 
--- Simulate loading progress
-local steps = {
-    {percent = 0.1, text = "Initializing UdunHub..."},
-    {percent = 0.2, text = "Loading core modules..."},
-    {percent = 0.3, text = "Fetching resources..."},
-    {percent = 0.4, text = "Connecting to server..."},
-    {percent = 0.5, text = "Loading UI components..."},
-    {percent = 0.6, text = "Configuring settings..."},
-    {percent = 0.7, text = "Loading features..."},
-    {percent = 0.8, text = "Preparing menu..."},
-    {percent = 0.9, text = "Finalizing..."},
-    {percent = 1.0, text = "Welcome to UdunHub!"}
-}
+-- Jalankan animasi di coroutine
+coroutine.wrap(animateLogo)()
 
-for i, step in ipairs(steps) do
-    UpdateLoading(step.percent, step.text)
-    wait(0.15)
-end
+-- Simulasi waktu loading (tanpa bar, hanya delay)
+wait(2.2)  -- total durasi loading screen
 
--- Wait a bit before starting main script
-wait(0.3)
-
--- Remove loading screen
+-- Hapus loading screen setelah selesai
 LoadingScreen:Destroy()
 
 -- INISIALISASI ICEHUB (TANPA TAB APAPUN)
@@ -109,4 +87,4 @@ local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGa
 
 local MainWindow = IceHub.CreateMain("Menu Utama", "v1.0.0")
 
--- Tidak ada tab atau konten apapun
+-- Tidak ada tab atau konten apapun yang ditambahkan
