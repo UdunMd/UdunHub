@@ -162,7 +162,7 @@ function UdunHub:Notify(title, message, duration, tag)
         local Frame = Create("Frame", {Name = "Notif", Size = UDim2.new(0, 280, 0, 0), BackgroundColor3 = CurrentTheme.Background, BackgroundTransparency = 0.1, BorderSizePixel = 0, ZIndex = 2001, Parent = NotifContainer})
         Create("UICorner", {CornerRadius = UDim.new(0, 14), Parent = Frame}); local S = Create("UIStroke", {Thickness = 1.5, Parent = Frame}); local SG = ApplyGradient(S); SG.Rotation = 45
         local Content = Create("Frame", {Name = "Content", Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = Frame, ZIndex = 2002})
-        local Icon = Create("TextLabel", {Text = "✦", Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(0, 10, 0, 10), BackgroundTransparency = 1, Parent = Content, ZIndex = 2002}); ApplyGradient(Icon)
+        local Icon = Create("TextLabel", {Text = "❖", Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(0, 10, 0, 10), BackgroundTransparency = 1, Parent = Content, ZIndex = 2002}); ApplyGradient(Icon)
         Create("TextLabel", {Text = title, Font = Enum.Font.GothamBold, TextColor3 = Color3.new(1, 1, 1), TextSize = 14, Size = UDim2.new(1, -50, 0, 20), Position = UDim2.new(0, 40, 0, 8), BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Parent = Content, ZIndex = 2002})
         Create("TextLabel", {Name = "Message", Text = message, Font = Enum.Font.Gotham, TextColor3 = CurrentTheme.Text, TextSize = 12, Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 15, 0, 30), BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Parent = Content, ZIndex = 2002})
         if tag and ActiveNotifications[tag] then ActiveNotifications[tag].Frame = Frame end
@@ -353,16 +353,86 @@ function UdunHub:AddSlider(name, min, max, default, callback, notificationOnInte
     local SliderBG = Create("TextButton", {Text = "", AutoButtonColor = false, Size = UDim2.new(0.9, 0, 0, 6), Position = UDim2.new(0.05, 0, 0, 32), BackgroundColor3 = CurrentTheme.SwitchOff, BorderSizePixel = 0, Parent = Frame}); Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = SliderBG})
     local Fill = Create("Frame", {Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = CurrentTheme.Accent1, BorderSizePixel = 0, Parent = SliderBG}); Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Fill}); table.insert(Registry.AccentFills, Fill)
     local Dragging = false
+    local CurrentValue = default
+    
+    local function SetValue(val)
+        val = math.clamp(val, min, max)
+        CurrentValue = val
+        local Ratio = (val - min) / (max - min)
+        TweenService:Create(Fill, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(Ratio, 0, 1, 0)}):Play()
+        ValueDisplay.Text = tostring(math.floor(val))
+        if callback then callback(math.floor(val)) end
+        if notificationOnInteract then UdunHub:Notify("Slider", name .. ": " .. math.floor(val), 2, "SliderNotif"..name) end
+    end
+    
     local function Update(input)
         local Ratio = math.clamp((input.Position.X - SliderBG.AbsolutePosition.X) / SliderBG.AbsoluteSize.X, 0, 1)
-        TweenService:Create(Fill, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(Ratio, 0, 1, 0)}):Play()
-        local Val = math.floor(min + ((max - min) * Ratio)); ValueDisplay.Text = tostring(Val)
-        if callback then callback(Val) end
-        if notificationOnInteract then UdunHub:Notify("Slider", name .. ": " .. Val, 2, "SliderNotif"..name) end
+        local Val = min + ((max - min) * Ratio)
+        SetValue(Val)
     end
-    SliderBG.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = true; Update(input) end end)
-    UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = false end end)
-    UserInputService.InputChanged:Connect(function(input) if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then Update(input) end end)
+    
+    -- Keyboard controls
+    local KeyUpConnection, KeyDownConnection
+    local function EnableKeyboardControls()
+        if KeyUpConnection then return end
+        KeyUpConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.KeyCode == Enum.KeyCode.Right then
+                SetValue(CurrentValue + 1)
+            elseif input.KeyCode == Enum.KeyCode.Left then
+                SetValue(CurrentValue - 1)
+            elseif input.KeyCode == Enum.KeyCode.PageUp then
+                SetValue(CurrentValue + 5)
+            elseif input.KeyCode == Enum.KeyCode.PageDown then
+                SetValue(CurrentValue - 5)
+            end
+        end)
+    end
+    
+    local function DisableKeyboardControls()
+        if KeyUpConnection then
+            KeyUpConnection:Disconnect()
+            KeyUpConnection = nil
+        end
+    end
+    
+    -- Mouse drag events
+    SliderBG.InputBegan:Connect(function(input) 
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            Dragging = true
+            EnableKeyboardControls()
+            Update(input)
+        end 
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input) 
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            Dragging = false
+            DisableKeyboardControls()
+        end 
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input) 
+        if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then 
+            Update(input)
+        end 
+    end)
+    
+    -- Enable keyboard controls when slider is focused (mouse enters)
+    local SliderHovering = false
+    Frame.MouseEnter:Connect(function()
+        SliderHovering = true
+        EnableKeyboardControls()
+    end)
+    Frame.MouseLeave:Connect(function()
+        SliderHovering = false
+        if not Dragging then
+            DisableKeyboardControls()
+        end
+    end)
+    
+    -- Initial value setup
+    SetValue(default)
 end
 
 --- Squircle Toggle ---
@@ -383,7 +453,7 @@ end
 
 ToggleBtn = Create("TextButton", {Name = "UdunToggle", Position = UDim2.new(0.02, 0, 0.5, 0), BackgroundColor3 = CurrentTheme.Header, Text = "", AutoButtonColor = false, Active = true, Size = UDim2.new(0, 0, 0, 0), ZIndex = 100, Parent = ScreenGui})
 MakeDraggable(ToggleBtn); Create("UICorner", {CornerRadius = UDim.new(0.25, 0), Parent = ToggleBtn}); local TS = Create("UIStroke", {Thickness = 2, Parent = ToggleBtn}); ApplyGradient(TS)
-ToggleIcon = Create("TextLabel", {Text = "✦", Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, TextColor3 = CurrentTheme.Accent1, Font = Enum.Font.GothamBold, TextSize = 24, Parent = ToggleBtn}); ApplyGradient(ToggleIcon); table.insert(Registry.Accents, ToggleIcon)
+ToggleIcon = Create("TextLabel", {Text = "❖", Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, TextColor3 = CurrentTheme.Accent1, Font = Enum.Font.GothamBold, TextSize = 24, Parent = ToggleBtn}); ApplyGradient(ToggleIcon); table.insert(Registry.Accents, ToggleIcon)
 ToggleBtn.MouseButton1Click:Connect(ToggleUI)
 
 
