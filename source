@@ -1,333 +1,56 @@
--- Load UI Library
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/x2zu/OPEN-SOURCE-UI-ROBLOX/refs/heads/main/X2ZU%20UI%20ROBLOX%20OPEN%20SOURCE/DummyUi-leak-by-x2zu/fetching-main/Tools/Framework.luau"))()
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Arcane-Library-Modified/refs/heads/main/Source"))()
 
--- Create Main Window
 local Window = Library:Window({
-    Title = "Slime RNG | X2ZU Hub",
-    Desc = "Auto Farm & Utilities",
-    Icon = 105059922903197,
-    Theme = "Dark",
-    Config = {
-        Keybind = Enum.KeyCode.LeftControl,
-        Size = UDim2.new(0, 550, 0, 450)
-    },
-    CloseUIButton = {
-        Enabled = true,
-        Text = "x2zu"
-    }
+    Name = "Balright",
+    Logo = "rbxassetid://93450275909746",
+    Size = UDim2.fromOffset(568, 350)
 })
 
--- Main Tab Features
-local MainTab = Window:Tab({Title = "Auto Farm", Icon = "star"})
+Window:Category("penis")
+local CombatPage = Window:Page({Name = "Page", Icon = "136879043989014"})
+Window:Page({Name = "Page", Icon = "136879043989014"})
+Window:Page({Name = "Page", Icon = "136879043989014"})
 
--- Variables for toggles
-local autoRollEnabled = false
-local autoUpgradeEnabled = false
-local autoLootEnabled = false
-local autoFightEnabled = false
-local selectedWorld = "World 1"
+local CombatSubPage = CombatPage:SubPage({Name = "Combat"})
+CombatPage:SubPage({Name = "Weapon"})
+CombatPage:SubPage({Name = "FoV"})
 
--- Auto Roll Toggle
-MainTab:Toggle({
-    Title = "Auto Roll",
-    Desc = "Automatically roll for new slimes",
-    Value = false,
-    Callback = function(v)
-        autoRollEnabled = v
-        if v then
-            Window:Notify({Title = "Auto Roll", Desc = "Started rolling...", Time = 2})
-        else
-            Window:Notify({Title = "Auto Roll", Desc = "Stopped rolling", Time = 2})
-        end
-    end
-})
+Window:Category("Settings")
+local SettingsPage = Library:CreateSettingsPage(Window)
 
--- Auto Upgrade Toggle
-MainTab:Toggle({
-    Title = "Auto Upgrade",
-    Desc = "Automatically upgrade your best slime",
-    Value = false,
-    Callback = function(v)
-        autoUpgradeEnabled = v
-        Window:Notify({Title = "Auto Upgrade", Desc = v and "Auto upgrade enabled" or "Auto upgrade disabled", Time = 2})
-    end
-})
+-- First section
+local AimbotSection = CombatSubPage:Section({Name = "Aimbot", Icon = "136879043989014"})
 
--- Auto Loot Toggle
-MainTab:Toggle({
-    Title = "Auto Loot",
-    Desc = "Auto pickup coins and items on ground",
-    Value = false,
-    Callback = function(v)
-        autoLootEnabled = v
-    end
-})
+AimbotSection:Toggle({Name = "Toggle", Flag = "Toggle", Callback = function(Value)
+    print(Value)
+end})
 
--- Section Separator
-MainTab:Line()
-
--- World Selection Dropdown
-MainTab:Dropdown({
-    Title = "Select World",
-    List = {"World 1", "World 2", "World 3", "World 4"},
-    Value = "World 1",
-    Callback = function(choice)
-        selectedWorld = choice
-        Window:Notify({Title = "World Selected", Desc = "Farming in " .. choice, Time = 2})
-    end
-})
-
--- Auto Fight Mobs Toggle (combat system)
-MainTab:Toggle({
-    Title = "Auto Fight Mobs",
-    Desc = "Automatically fight enemies in current world",
-    Value = false,
-    Callback = function(v)
-        autoFightEnabled = v
-        if v then
-            Window:Notify({Title = "Auto Fight", Desc = "Started hunting enemies", Time = 2})
-        end
-    end
-})
-
--- Roll Speed Slider
-local rollSpeedSlider
-rollSpeedSlider = MainTab:Slider({
-    Title = "Roll Delay (seconds)",
-    Min = 0.5,
-    Max = 5,
-    Rounding = 1,
-    Value = 1,
-    Callback = function(val)
-        print("Roll delay set to:", val)
-    end
-})
-
--- Second Tab: Utils
-local UtilsTab = Window:Tab({Title = "Utilities", Icon = "wrench"})
-
--- Claim Code Button
-UtilsTab:Button({
-    Title = "Claim All Codes",
-    Desc = "Auto claim available gift codes",
+AimbotSection:Button({
+    Name = "Click Me",
     Callback = function()
-        -- Simulate claiming codes
-        Window:Notify({Title = "Codes", Desc = "Claimed: test, gullible, time2Grind", Time = 3})
+        print("Button was clicked!")
     end
 })
 
--- Teleport Button (to mobs)
-UtilsTab:Button({
-    Title = "Teleport to Mobs",
-    Desc = "Jump directly to enemy spawn location",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            -- Simulate teleport to mob area
-            Window:Notify({Title = "Teleport", Desc = "Arrived at mob area", Time = 2})
-        end
-    end
-})
+AimbotSection:Slider({Name = "Slider", Flag = "Slider", Min = 0, Max = 100, Default = 50, Suffix = "%", Decimals = 1, Callback = function(Value)
+    print(Value)
+end})
 
--- Auto Rebirth Toggle
-UtilsTab:Toggle({
-    Title = "Auto Rebirth",
-    Desc = "Automatically rebirth when available",
-    Value = false,
-    Callback = function(v)
-        if v then
-            Window:Notify({Title = "Auto Rebirth", Desc = "Will auto rebirth when ready", Time = 2})
-        end
-    end
-})
+AimbotSection:Dropdown({Name = "Dropdown", Flag = "Dropdown", Items = {"Option 1", "Option 2", "Option 3", "Option 4"}, Default = "Option 2", Multi = false, Callback = function(Value)
+    print(Value)
+end})
 
--- Third Tab: Info & Status
-local InfoTab = Window:Tab({Title = "Status", Icon = "info"})
+AimbotSection:Label("Label"):Colorpicker({Flag = "Colorpicker", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
+    print(Value)
+end})
 
--- Display player stats
-InfoTab:Section({Title = "Player Information"})
+AimbotSection:Label("Label"):Keybind({Flag = "Keybind", Default = Enum.KeyCode.E, Mode = "Toggle", Callback = function(Value)
+    print(Value)
+end})
 
--- Simulated stat display using code component
-InfoTab:Code({
-    Title = "Current Stats",
-    Code = "Loading stats..."
-})
+AimbotSection:Textbox({Flag = "Textbox", Placeholder = "Placeholder", Default = "Text", Finished = false, Numeric = false, Callback = function(Value)
+    print(Value)
+end})
 
--- Stats display container
-local statsText = "≡ Slime RNG Status ≡\n\n▶ Auto Roll: OFF\n▶ Auto Upgrade: OFF\n▶ Auto Loot: OFF\n▶ Auto Fight: OFF\n\n🎲 Current World: World 1\n✨ Luck Boost: +0\n🔄 Rolls Done: 0"
-
-local statsCode = InfoTab:Code({
-    Title = "Status Monitor",
-    Code = statsText
-})
-
--- Fourth Tab: Settings
-local SettingsTab = Window:Tab({Title = "Settings", Icon = "gear"})
-
-SettingsTab:Section({Title = "Script Configuration"})
-
--- Display credits
-SettingsTab:Button({
-    Title = "Script Info",
-    Desc = "Show credits and version",
-    Callback = function()
-        Window:Notify({
-            Title = "X2ZU Hub | Slime RNG",
-            Desc = "Version 1.0 | Credits: x2zu",
-            Time = 4
-        })
-    end
-})
-
--- Notification for UI loaded
-Window:Notify({
-    Title = "Slime RNG Hub",
-    Desc = "Script loaded! Use LeftCtrl to toggle UI",
-    Time = 5
-})
-
--- ============================================
--- MAIN LOOP - Core Automation Functions
--- ============================================
-
--- Function to simulate clicking the roll button
-local function clickRollButton()
-    -- Locate Roll button - adjust based on actual game UI
-    local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    
-    -- Common button name guesses
-    local possibleButtonNames = {"Roll", "RollButton", "Spin", "AutoRoll", "RollBtn"}
-    
-    for _, name in pairs(possibleButtonNames) do
-        local button = playerGui:FindFirstChild(name, true)
-        if button and button:IsA("TextButton") or button:IsA("ImageButton") then
-            button:Click()
-            return true
-        end
-    end
-    return false
-end
-
--- Function to collect ground items
-local function lootNearby()
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    if not character then return end
-    
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    -- Look for items on ground (coins, loot bags, orbs)
-    for _, item in ipairs(workspace:GetDescendants()) do
-        if item:IsA("BasePart") and item:FindFirstChild("BillboardGui") then
-            -- Item detection logic would go here
-            if (item.Position - hrp.Position).Magnitude < 15 then
-                -- Move to item position
-                hrp.CFrame = CFrame.new(item.Position)
-                wait(0.3)
-                -- Simulate touching the part to collect
-                firetouchinterest(hrp, item, 0)
-                firetouchinterest(hrp, item, 1)
-            end
-        end
-    end
-end
-
--- Function to find and fight nearest enemy
-local function fightNearestEnemy()
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    if not character then return end
-    
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    -- Look for enemies (mobs) in workspace
-    local nearestEnemy = nil
-    local nearestDist = 50
-    
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
-            if obj.Name:find("Enemy") or obj.Name:find("Mob") or obj.Name:find("Slime") then
-                local enemyHrp = obj:FindFirstChild("HumanoidRootPart")
-                if enemyHrp and enemyHrp.Position then
-                    local dist = (enemyHrp.Position - hrp.Position).Magnitude
-                    if dist < nearestDist and dist > 5 then
-                        nearestDist = dist
-                        nearestEnemy = obj
-                    end
-                end
-            end
-        end
-    end
-    
-    if nearestEnemy and nearestEnemy:FindFirstChild("HumanoidRootPart") then
-        -- Move to enemy
-        hrp.CFrame = CFrame.new(nearestEnemy.HumanoidRootPart.Position)
-        wait(0.2)
-        -- Auto attack - simulate click on enemy (hitbox)
-        local humanoid = nearestEnemy:FindFirstChild("Humanoid")
-        if humanoid and humanoid.Health > 0 then
-            -- Attack logic would go here
-        end
-    end
-end
-
--- Function to upgrade best owned slime
-local function attemptUpgrade()
-    -- Look for upgrade button in UI
-    local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    local upgradeBtn = playerGui:FindFirstChild("Upgrade", true)
-    if upgradeBtn and (upgradeBtn:IsA("TextButton") or upgradeBtn:IsA("ImageButton")) then
-        upgradeBtn:Click()
-        return true
-    end
-    return false
-end
-
--- Main automation coroutine
-spawn(function()
-    while true do
-        wait(rollSpeedSlider.Value or 1)
-        
-        if autoRollEnabled then
-            clickRollButton()
-        end
-        
-        if autoLootEnabled then
-            lootNearby()
-        end
-        
-        if autoFightEnabled then
-            fightNearestEnemy()
-        end
-        
-        if autoUpgradeEnabled then
-            attemptUpgrade()
-        end
-        
-        -- Update status display periodically
-        local status = string.format(
-            "≡ Slime RNG Status ≡\n\n▶ Auto Roll: %s\n▶ Auto Upgrade: %s\n▶ Auto Loot: %s\n▶ Auto Fight: %s\n▶ Auto Rebirth: %s\n\n🎲 Current World: %s\n⏱️ Roll Delay: %.1fs",
-            autoRollEnabled and "ON ✅" or "OFF ❌",
-            autoUpgradeEnabled and "ON ✅" or "OFF ❌",
-            autoLootEnabled and "ON ✅" or "OFF ❌",
-            autoFightEnabled and "ON ✅" or "OFF ❌",
-            "OFF ❌",
-            selectedWorld,
-            rollSpeedSlider.Value
-        )
-        pcall(function()
-            statsCode:SetCode(status)
-        end)
-    end
-end)
-
--- Rebirth automation (separate loop, checks less frequently)
-spawn(function()
-    local autoRebirthEnabled = false
-    while true do
-        wait(5)
-        -- Add rebirth checking logic here if needed
-    end
-end)
+Library:Notification("Notification without icon", 5, nil)
+Library:Notification("Notification with icon lol noob", 5, "94627324690861")
