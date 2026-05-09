@@ -1,6 +1,7 @@
--- LOADING SCREEN
+-- LOADING SCREEN WITH UDUNHUB LOGO
 local LoadingScreen = Instance.new("ScreenGui")
 local Background = Instance.new("Frame")
+local Logo = Instance.new("TextLabel")
 local LoadingBar = Instance.new("Frame")
 local LoadingFill = Instance.new("Frame")
 local LoadingText = Instance.new("TextLabel")
@@ -14,8 +15,22 @@ LoadingScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 -- Background
 Background.Name = "Background"
 Background.Parent = LoadingScreen
-Background.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+Background.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
 Background.Size = UDim2.new(1, 0, 1, 0)
+
+-- UdunHub Logo
+Logo.Name = "Logo"
+Logo.Parent = Background
+Logo.BackgroundTransparency = 1
+Logo.Position = UDim2.new(0.5, -150, 0.2, 0)
+Logo.Size = UDim2.new(0, 300, 0, 60)
+Logo.Font = Enum.Font.GothamBold
+Logo.Text = "UDUNHUB"
+Logo.TextColor3 = Color3.fromRGB(0, 200, 255)
+Logo.TextSize = 48
+Logo.TextScaled = true
+Logo.TextStrokeTransparency = 0.5
+Logo.TextStrokeColor3 = Color3.fromRGB(0, 100, 150)
 
 -- Loading Bar Container
 LoadingBar.Name = "LoadingBar"
@@ -28,7 +43,7 @@ LoadingBar.Size = UDim2.new(0, 300, 0, 30)
 -- Loading Fill
 LoadingFill.Name = "LoadingFill"
 LoadingFill.Parent = LoadingBar
-LoadingFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+LoadingFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 LoadingFill.BorderSizePixel = 0
 LoadingFill.Size = UDim2.new(0, 0, 1, 0)
 
@@ -36,10 +51,10 @@ LoadingFill.Size = UDim2.new(0, 0, 1, 0)
 LoadingText.Name = "LoadingText"
 LoadingText.Parent = Background
 LoadingText.BackgroundTransparency = 1
-LoadingText.Position = UDim2.new(0.5, -100, 0.5, -50)
-LoadingText.Size = UDim2.new(0, 200, 0, 30)
+LoadingText.Position = UDim2.new(0.5, -150, 0.5, -50)
+LoadingText.Size = UDim2.new(0, 300, 0, 30)
 LoadingText.Font = Enum.Font.GothamBold
-LoadingText.Text = "Loading Script..."
+LoadingText.Text = "Loading UdunHub..."
 LoadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingText.TextSize = 18
 LoadingText.TextScaled = false
@@ -48,7 +63,7 @@ LoadingText.TextScaled = false
 LoadingPercent.Name = "LoadingPercent"
 LoadingPercent.Parent = Background
 LoadingPercent.BackgroundTransparency = 1
-LoadingPercent.Position = UDim2.new(0.5, -50, 0.5, 25)
+LoadingPercent.Position = UDim2.new(0.5, -50, 0.5, 30)
 LoadingPercent.Size = UDim2.new(0, 100, 0, 25)
 LoadingPercent.Font = Enum.Font.Gotham
 LoadingPercent.Text = "0%"
@@ -66,16 +81,16 @@ end
 
 -- Simulate loading progress
 local steps = {
-    {percent = 0.1, text = "Initializing..."},
-    {percent = 0.2, text = "Loading IceHub Library..."},
+    {percent = 0.1, text = "Initializing UdunHub..."},
+    {percent = 0.2, text = "Loading core modules..."},
     {percent = 0.3, text = "Fetching resources..."},
     {percent = 0.4, text = "Connecting to server..."},
     {percent = 0.5, text = "Loading UI components..."},
     {percent = 0.6, text = "Configuring settings..."},
-    {percent = 0.7, text = "Loading modules..."},
-    {percent = 0.8, text = "Preparing features..."},
+    {percent = 0.7, text = "Loading features..."},
+    {percent = 0.8, text = "Preparing menu..."},
     {percent = 0.9, text = "Finalizing..."},
-    {percent = 1.0, text = "Complete!"}
+    {percent = 1.0, text = "Welcome to UdunHub!"}
 }
 
 for i, step in ipairs(steps) do
