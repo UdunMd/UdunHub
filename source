@@ -1,3 +1,95 @@
+-- LOADING SCREEN
+local LoadingScreen = Instance.new("ScreenGui")
+local Background = Instance.new("Frame")
+local LoadingBar = Instance.new("Frame")
+local LoadingFill = Instance.new("Frame")
+local LoadingText = Instance.new("TextLabel")
+local LoadingPercent = Instance.new("TextLabel")
+
+LoadingScreen.Name = "LoadingScreen"
+LoadingScreen.Parent = game.CoreGui
+LoadingScreen.IgnoreGuiInset = true
+LoadingScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Background
+Background.Name = "Background"
+Background.Parent = LoadingScreen
+Background.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+Background.Size = UDim2.new(1, 0, 1, 0)
+
+-- Loading Bar Container
+LoadingBar.Name = "LoadingBar"
+LoadingBar.Parent = Background
+LoadingBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+LoadingBar.BorderSizePixel = 0
+LoadingBar.Position = UDim2.new(0.5, -150, 0.5, -15)
+LoadingBar.Size = UDim2.new(0, 300, 0, 30)
+
+-- Loading Fill
+LoadingFill.Name = "LoadingFill"
+LoadingFill.Parent = LoadingBar
+LoadingFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+LoadingFill.BorderSizePixel = 0
+LoadingFill.Size = UDim2.new(0, 0, 1, 0)
+
+-- Loading Text
+LoadingText.Name = "LoadingText"
+LoadingText.Parent = Background
+LoadingText.BackgroundTransparency = 1
+LoadingText.Position = UDim2.new(0.5, -100, 0.5, -50)
+LoadingText.Size = UDim2.new(0, 200, 0, 30)
+LoadingText.Font = Enum.Font.GothamBold
+LoadingText.Text = "Loading Script..."
+LoadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingText.TextSize = 18
+LoadingText.TextScaled = false
+
+-- Loading Percent
+LoadingPercent.Name = "LoadingPercent"
+LoadingPercent.Parent = Background
+LoadingPercent.BackgroundTransparency = 1
+LoadingPercent.Position = UDim2.new(0.5, -50, 0.5, 25)
+LoadingPercent.Size = UDim2.new(0, 100, 0, 25)
+LoadingPercent.Font = Enum.Font.Gotham
+LoadingPercent.Text = "0%"
+LoadingPercent.TextColor3 = Color3.fromRGB(200, 200, 200)
+LoadingPercent.TextSize = 14
+
+-- Animate Loading Bar
+local function UpdateLoading(progress, message)
+    LoadingFill:TweenSize(UDim2.new(progress, 0, 1, 0), "Out", "Linear", 0.1)
+    LoadingPercent.Text = math.floor(progress * 100) .. "%"
+    if message then
+        LoadingText.Text = message
+    end
+end
+
+-- Simulate loading progress
+local steps = {
+    {percent = 0.1, text = "Initializing..."},
+    {percent = 0.2, text = "Loading IceHub Library..."},
+    {percent = 0.3, text = "Fetching resources..."},
+    {percent = 0.4, text = "Connecting to server..."},
+    {percent = 0.5, text = "Loading UI components..."},
+    {percent = 0.6, text = "Configuring settings..."},
+    {percent = 0.7, text = "Loading modules..."},
+    {percent = 0.8, text = "Preparing features..."},
+    {percent = 0.9, text = "Finalizing..."},
+    {percent = 1.0, text = "Complete!"}
+}
+
+for i, step in ipairs(steps) do
+    UpdateLoading(step.percent, step.text)
+    wait(0.15)
+end
+
+-- Wait a bit before starting main script
+wait(0.3)
+
+-- Remove loading screen
+LoadingScreen:Destroy()
+
+-- YOUR ORIGINAL SCRIPT STARTS HERE
 local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Ice-Hub-Library/refs/heads/main/Source"))()
 
 local MainWindow = IceHub.CreateMain("Script Name", "v1.0.0")
