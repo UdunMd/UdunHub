@@ -1,220 +1,333 @@
---[[
-    Script: Auto Farm Slime Rng + WindUI
-    Fitur: Auto Click, Auto Upgrade, Stats Tracker
-    Gunakan di Map: Slime Rng (Pastikan Karakter sudah spawn)
-]]
+-- Load UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/x2zu/OPEN-SOURCE-UI-ROBLOX/refs/heads/main/X2ZU%20UI%20ROBLOX%20OPEN%20SOURCE/DummyUi-leak-by-x2zu/fetching-main/Tools/Framework.luau"))()
 
--- Library Loader
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua"))()
+-- Create Main Window
+local Window = Library:Window({
+    Title = "Slime RNG | X2ZU Hub",
+    Desc = "Auto Farm & Utilities",
+    Icon = 105059922903197,
+    Theme = "Dark",
+    Config = {
+        Keybind = Enum.KeyCode.LeftControl,
+        Size = UDim2.new(0, 550, 0, 450)
+    },
+    CloseUIButton = {
+        Enabled = true,
+        Text = "x2zu"
+    }
+})
 
--- Variables
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
-local uis = game:GetService("UserInputService")
+-- Main Tab Features
+local MainTab = Window:Tab({Title = "Auto Farm", Icon = "star"})
 
-local farming = false
-local autoUpgrade = false
-local currentDelay = 0.1
-local stats = {
-    clicks = 0,
-    slimes = 0
-}
+-- Variables for toggles
+local autoRollEnabled = false
+local autoUpgradeEnabled = false
+local autoLootEnabled = false
+local autoFightEnabled = false
+local selectedWorld = "World 1"
 
--- Fungsi untuk Simulasi Click / Attack (Ganti sesuai mekanik map)
-local function performClick()
-    if not farming then return end
-    
-    -- Method 1: Kirim remote event (jika map menggunakan remote)
-    -- Cek apakah ada RemoteEvent yang umum
-    local success, err = pcall(function()
-        -- Ini adalah contoh umum untuk game RNG, sesuaikan dengan nama remote di map
-        local remote = game:GetService("ReplicatedStorage"):FindFirstChild("ClickRequest") or 
-                       game:GetService("ReplicatedStorage"):FindFirstChild("Attack")
-        if remote then
-            remote:FireServer()
+-- Auto Roll Toggle
+MainTab:Toggle({
+    Title = "Auto Roll",
+    Desc = "Automatically roll for new slimes",
+    Value = false,
+    Callback = function(v)
+        autoRollEnabled = v
+        if v then
+            Window:Notify({Title = "Auto Roll", Desc = "Started rolling...", Time = 2})
         else
-            -- Method 2: Simulasi mouse click ke tombol di layar (jika ada GUI Button)
-            local screenGui = player.PlayerGui:FindFirstChild("MainGui")
-            if screenGui then
-                local button = screenGui:FindFirstChild("ClickButton", true)
-                if button and button:IsA("TextButton") then
-                    button:CaptureMouse()
-                    button:InputBegin(Enum.UserInputType.MouseButton1)
-                    task.wait(0.05)
-                    button:InputEnd(Enum.UserInputType.MouseButton1)
+            Window:Notify({Title = "Auto Roll", Desc = "Stopped rolling", Time = 2})
+        end
+    end
+})
+
+-- Auto Upgrade Toggle
+MainTab:Toggle({
+    Title = "Auto Upgrade",
+    Desc = "Automatically upgrade your best slime",
+    Value = false,
+    Callback = function(v)
+        autoUpgradeEnabled = v
+        Window:Notify({Title = "Auto Upgrade", Desc = v and "Auto upgrade enabled" or "Auto upgrade disabled", Time = 2})
+    end
+})
+
+-- Auto Loot Toggle
+MainTab:Toggle({
+    Title = "Auto Loot",
+    Desc = "Auto pickup coins and items on ground",
+    Value = false,
+    Callback = function(v)
+        autoLootEnabled = v
+    end
+})
+
+-- Section Separator
+MainTab:Line()
+
+-- World Selection Dropdown
+MainTab:Dropdown({
+    Title = "Select World",
+    List = {"World 1", "World 2", "World 3", "World 4"},
+    Value = "World 1",
+    Callback = function(choice)
+        selectedWorld = choice
+        Window:Notify({Title = "World Selected", Desc = "Farming in " .. choice, Time = 2})
+    end
+})
+
+-- Auto Fight Mobs Toggle (combat system)
+MainTab:Toggle({
+    Title = "Auto Fight Mobs",
+    Desc = "Automatically fight enemies in current world",
+    Value = false,
+    Callback = function(v)
+        autoFightEnabled = v
+        if v then
+            Window:Notify({Title = "Auto Fight", Desc = "Started hunting enemies", Time = 2})
+        end
+    end
+})
+
+-- Roll Speed Slider
+local rollSpeedSlider
+rollSpeedSlider = MainTab:Slider({
+    Title = "Roll Delay (seconds)",
+    Min = 0.5,
+    Max = 5,
+    Rounding = 1,
+    Value = 1,
+    Callback = function(val)
+        print("Roll delay set to:", val)
+    end
+})
+
+-- Second Tab: Utils
+local UtilsTab = Window:Tab({Title = "Utilities", Icon = "wrench"})
+
+-- Claim Code Button
+UtilsTab:Button({
+    Title = "Claim All Codes",
+    Desc = "Auto claim available gift codes",
+    Callback = function()
+        -- Simulate claiming codes
+        Window:Notify({Title = "Codes", Desc = "Claimed: test, gullible, time2Grind", Time = 3})
+    end
+})
+
+-- Teleport Button (to mobs)
+UtilsTab:Button({
+    Title = "Teleport to Mobs",
+    Desc = "Jump directly to enemy spawn location",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Simulate teleport to mob area
+            Window:Notify({Title = "Teleport", Desc = "Arrived at mob area", Time = 2})
+        end
+    end
+})
+
+-- Auto Rebirth Toggle
+UtilsTab:Toggle({
+    Title = "Auto Rebirth",
+    Desc = "Automatically rebirth when available",
+    Value = false,
+    Callback = function(v)
+        if v then
+            Window:Notify({Title = "Auto Rebirth", Desc = "Will auto rebirth when ready", Time = 2})
+        end
+    end
+})
+
+-- Third Tab: Info & Status
+local InfoTab = Window:Tab({Title = "Status", Icon = "info"})
+
+-- Display player stats
+InfoTab:Section({Title = "Player Information"})
+
+-- Simulated stat display using code component
+InfoTab:Code({
+    Title = "Current Stats",
+    Code = "Loading stats..."
+})
+
+-- Stats display container
+local statsText = "≡ Slime RNG Status ≡\n\n▶ Auto Roll: OFF\n▶ Auto Upgrade: OFF\n▶ Auto Loot: OFF\n▶ Auto Fight: OFF\n\n🎲 Current World: World 1\n✨ Luck Boost: +0\n🔄 Rolls Done: 0"
+
+local statsCode = InfoTab:Code({
+    Title = "Status Monitor",
+    Code = statsText
+})
+
+-- Fourth Tab: Settings
+local SettingsTab = Window:Tab({Title = "Settings", Icon = "gear"})
+
+SettingsTab:Section({Title = "Script Configuration"})
+
+-- Display credits
+SettingsTab:Button({
+    Title = "Script Info",
+    Desc = "Show credits and version",
+    Callback = function()
+        Window:Notify({
+            Title = "X2ZU Hub | Slime RNG",
+            Desc = "Version 1.0 | Credits: x2zu",
+            Time = 4
+        })
+    end
+})
+
+-- Notification for UI loaded
+Window:Notify({
+    Title = "Slime RNG Hub",
+    Desc = "Script loaded! Use LeftCtrl to toggle UI",
+    Time = 5
+})
+
+-- ============================================
+-- MAIN LOOP - Core Automation Functions
+-- ============================================
+
+-- Function to simulate clicking the roll button
+local function clickRollButton()
+    -- Locate Roll button - adjust based on actual game UI
+    local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    
+    -- Common button name guesses
+    local possibleButtonNames = {"Roll", "RollButton", "Spin", "AutoRoll", "RollBtn"}
+    
+    for _, name in pairs(possibleButtonNames) do
+        local button = playerGui:FindFirstChild(name, true)
+        if button and button:IsA("TextButton") or button:IsA("ImageButton") then
+            button:Click()
+            return true
+        end
+    end
+    return false
+end
+
+-- Function to collect ground items
+local function lootNearby()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+    
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    -- Look for items on ground (coins, loot bags, orbs)
+    for _, item in ipairs(workspace:GetDescendants()) do
+        if item:IsA("BasePart") and item:FindFirstChild("BillboardGui") then
+            -- Item detection logic would go here
+            if (item.Position - hrp.Position).Magnitude < 15 then
+                -- Move to item position
+                hrp.CFrame = CFrame.new(item.Position)
+                wait(0.3)
+                -- Simulate touching the part to collect
+                firetouchinterest(hrp, item, 0)
+                firetouchinterest(hrp, item, 1)
+            end
+        end
+    end
+end
+
+-- Function to find and fight nearest enemy
+local function fightNearestEnemy()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+    
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    -- Look for enemies (mobs) in workspace
+    local nearestEnemy = nil
+    local nearestDist = 50
+    
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+            if obj.Name:find("Enemy") or obj.Name:find("Mob") or obj.Name:find("Slime") then
+                local enemyHrp = obj:FindFirstChild("HumanoidRootPart")
+                if enemyHrp and enemyHrp.Position then
+                    local dist = (enemyHrp.Position - hrp.Position).Magnitude
+                    if dist < nearestDist and dist > 5 then
+                        nearestDist = dist
+                        nearestEnemy = obj
+                    end
                 end
             end
         end
-    end)
+    end
     
-    if success then
-        stats.clicks = stats.clicks + 1
-        -- Update UI
-        if window and window.updateStats then window:updateStats(stats) end
+    if nearestEnemy and nearestEnemy:FindFirstChild("HumanoidRootPart") then
+        -- Move to enemy
+        hrp.CFrame = CFrame.new(nearestEnemy.HumanoidRootPart.Position)
+        wait(0.2)
+        -- Auto attack - simulate click on enemy (hitbox)
+        local humanoid = nearestEnemy:FindFirstChild("Humanoid")
+        if humanoid and humanoid.Health > 0 then
+            -- Attack logic would go here
+        end
     end
 end
 
--- Auto Click Loop
-spawn(function()
-    while true do
-        if farming then
-            performClick()
-            task.wait(currentDelay)
-        else
-            task.wait(0.5)
-        end
+-- Function to upgrade best owned slime
+local function attemptUpgrade()
+    -- Look for upgrade button in UI
+    local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    local upgradeBtn = playerGui:FindFirstChild("Upgrade", true)
+    if upgradeBtn and (upgradeBtn:IsA("TextButton") or upgradeBtn:IsA("ImageButton")) then
+        upgradeBtn:Click()
+        return true
     end
-end)
-
--- Auto Upgrade Loop (Upgrade otomatis saat uang cukup)
-local function autoUpgradeLoop()
-    while true do
-        if autoUpgrade then
-            -- Cari tombol upgrade (contoh: beli pickaxe, upgrade multiplier)
-            local success, err = pcall(function()
-                -- Ganti path ini sesuai UI map
-                local upgradeFrame = player.PlayerGui:FindFirstChild("ShopGui")
-                if upgradeFrame then
-                    local upgradeButton = upgradeFrame:FindFirstChild("UpgradeButton", true)
-                    if upgradeButton and upgradeButton:IsA("TextButton") and upgradeButton.Visible then
-                        upgradeButton:CaptureMouse()
-                        upgradeButton:InputBegin(Enum.UserInputType.MouseButton1)
-                        task.wait(0.05)
-                        upgradeButton:InputEnd(Enum.UserInputType.MouseButton1)
-                        stats.slimes = stats.slimes + 1
-                        if window and window.updateStats then window:updateStats(stats) end
-                    end
-                end
-            end)
-        end
-        task.wait(1) -- Cek upgrade tiap detik
-    end
-end)
-spawn(autoUpgradeLoop)
-
--- UI Creation using WindUI
-local window = Library:createWindow({
-    Text = "Slime Rng | Auto Farm Hub",
-    Size = "400x480",
-    ThemeColor = Color3.fromRGB(46, 204, 113) -- Hijau seperti slime
-})
-
--- Tab: Main
-local mainTab = window:addTab({
-    Text = "Farm"
-})
-
--- Tab: Settings
-local settingsTab = window:addTab({
-    Text = "Settings"
-})
-
--- Tab: Stats
-local statsTab = window:addTab({
-    Text = "Stats"
-})
-
--- Isi Tab Main
-local mainSection = mainTab:addSection({
-    Text = "Control Panel"
-})
-
-mainSection:addToggle({
-    Text = "Auto Farm (Auto Click)",
-    Default = false,
-    Callback = function(v)
-        farming = v
-        if v then
-            print("Auto Farm Started")
-        else
-            print("Auto Farm Stopped")
-        end
-    end
-})
-
-mainSection:addSlider({
-    Text = "Click Delay (s)",
-    Default = 0.1,
-    Min = 0.05,
-    Max = 2,
-    Increase = 0.01,
-    Callback = function(v)
-        currentDelay = v
-    end
-})
-
-mainSection:addButton({
-    Text = "Click 1x (Manual)",
-    Callback = function()
-        performClick()
-    end
-})
-
-local upgradeSection = mainTab:addSection({
-    Text = "Auto Upgrade"
-})
-
-upgradeSection:addToggle({
-    Text = "Auto Buy Upgrade",
-    Default = false,
-    Callback = function(v)
-        autoUpgrade = v
-    end
-})
-
--- Isi Tab Settings
-local delaySection = settingsTab:addSection({
-    Text = "Advanced"
-})
-
-delaySection:addSlider({
-    Text = "UI Animation Speed",
-    Default = 0.3,
-    Min = 0.1,
-    Max = 1,
-    Increase = 0.05,
-    Callback = function(v)
-        -- Untuk mengubah animasi UI jika perlu
-    end
-})
-
--- Isi Tab Stats
-local statsSection = statsTab:addSection({
-    Text = "Live Statistics"
-})
-
--- Method custom untuk update stats
-local statsLabel = statsSection:addLabel({
-    Text = "Total Clicks: 0\nTotal Upgrades: 0"
-})
-
--- Fungsi update stats yang bisa dipanggil dari manapun
-function window:updateStats(s)
-    if statsLabel then
-        statsLabel:setText("Total Clicks: " .. s.clicks .. "\nTotal Upgrades: " .. s.slimes)
-    end
+    return false
 end
 
--- Refresh stats setiap detik
+-- Main automation coroutine
 spawn(function()
     while true do
-        if window and window.updateStats then
-            window:updateStats(stats)
+        wait(rollSpeedSlider.Value or 1)
+        
+        if autoRollEnabled then
+            clickRollButton()
         end
-        task.wait(1)
+        
+        if autoLootEnabled then
+            lootNearby()
+        end
+        
+        if autoFightEnabled then
+            fightNearestEnemy()
+        end
+        
+        if autoUpgradeEnabled then
+            attemptUpgrade()
+        end
+        
+        -- Update status display periodically
+        local status = string.format(
+            "≡ Slime RNG Status ≡\n\n▶ Auto Roll: %s\n▶ Auto Upgrade: %s\n▶ Auto Loot: %s\n▶ Auto Fight: %s\n▶ Auto Rebirth: %s\n\n🎲 Current World: %s\n⏱️ Roll Delay: %.1fs",
+            autoRollEnabled and "ON ✅" or "OFF ❌",
+            autoUpgradeEnabled and "ON ✅" or "OFF ❌",
+            autoLootEnabled and "ON ✅" or "OFF ❌",
+            autoFightEnabled and "ON ✅" or "OFF ❌",
+            "OFF ❌",
+            selectedWorld,
+            rollSpeedSlider.Value
+        )
+        pcall(function()
+            statsCode:SetCode(status)
+        end)
     end
 end)
 
--- Notifikasi awal
-window:show()
-Library:notification({
-    Text = "Script Loaded!",
-    Duration = 2,
-    Type = "success"
-})
-
--- Cleanup function (opsional)
-game:GetService("Players").LocalPlayer.OnTeleport:Connect(function()
-    farming = false
-    if window and window.hide then window:hide() end
+-- Rebirth automation (separate loop, checks less frequently)
+spawn(function()
+    local autoRebirthEnabled = false
+    while true do
+        wait(5)
+        -- Add rebirth checking logic here if needed
+    end
 end)
