@@ -1,31 +1,31 @@
 --[[
-    SCRIPT AUTO WALK - SLIME RNG
-    Menggunakan WindUI Library
+    SCRIPT AUTO WALK - SLIME RNG (FIXED)
     Fitur:
     - Auto Walk (berjalan otomatis)
     - Pengaturan Kecepatan (Speed)
     - Pilihan Arah (Forward/Backward/Left/Right)
-    - Toggle UI dengan tombol Insert
+    - Reset speed saat auto walk dimatikan
 --]]
 
 -- Load WindUI Library
 local WindUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua'))()
 
--- Variabel untuk auto walk
+-- Variabel
 local autoWalkEnabled = false
-local walkDirection = "Forward" -- Forward, Backward, Left, Right
+local walkDirection = "Forward"
 local walkSpeed = 16
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+local currentWalkTask = nil
 
--- Fungsi untuk update character reference
+-- Update character
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoid = character:WaitForChild("Humanoid")
 end)
 
--- Fungsi untuk mendapatkan arah gerakan
+-- Mendapatkan arah gerakan
 local function getMoveDirection()
     local camera = workspace.CurrentCamera
     local cf = camera.CFrame
@@ -42,31 +42,42 @@ local function getMoveDirection()
     return Vector3.new(0, 0, 0)
 end
 
--- Fungsi untuk toggle auto walk
+-- Berhenti berjalan
+local function stopWalking()
+    if humanoid then
+        humanoid:Move(Vector3.new(0, 0, 0), false)
+        humanoid.WalkSpeed = 16 -- Reset kecepatan normal
+    end
+end
+
+-- Auto walk loop
+local function startAutoWalk()
+    if currentWalkTask then
+        task.cancel(currentWalkTask)
+    end
+    
+    currentWalkTask = task.spawn(function()
+        while autoWalkEnabled and humanoid and humanoid.Parent do
+            local moveDir = getMoveDirection()
+            humanoid:Move(moveDir, true)
+            humanoid.WalkSpeed = walkSpeed
+            task.wait()
+        end
+    end)
+end
+
+-- Toggle auto walk
 local function toggleAutoWalk()
     autoWalkEnabled = not autoWalkEnabled
     
     if autoWalkEnabled then
-        humanoid.WalkSpeed = walkSpeed
-        
-        -- Loop untuk auto walk
-        spawn(function()
-            while autoWalkEnabled do
-                if humanoid and humanoid.Parent then
-                    local moveDir = getMoveDirection()
-                    humanoid:Move(moveDir, true)
-                end
-                task.wait()
-            end
-        end)
+        startAutoWalk()
     else
-        if humanoid then
-            humanoid:Move(Vector3.new(0, 0, 0), false)
-        end
+        stopWalking()
     end
 end
 
--- Update kecepatan saat value berubah
+-- Update speed
 local function setWalkSpeed(value)
     walkSpeed = value
     if autoWalkEnabled and humanoid then
@@ -74,37 +85,32 @@ local function setWalkSpeed(value)
     end
 end
 
--- Membuat Window utama
+-- UI WINDOW
 local MainWindow = WindUI:Window({
     Title = "Slime RNG Auto Walk",
     SubTitle = "Auto Walk Script",
     Icon = "rbxassetid://6031093677"
 })
 
--- Tab untuk Auto Walk
 local AutoWalkTab = MainWindow:Tab({
     Title = "Auto Walk"
 })
 
--- Section utama
 local MainSection = AutoWalkTab:Section({
     Title = "Pengaturan Auto Walk"
 })
 
--- Toggle untuk mengaktifkan auto walk
-MainSection:Toggle({
+-- Toggle utama
+local autoWalkToggle
+autoWalkToggle = MainSection:Toggle({
     Title = "Auto Walk",
     Description = "Aktifkan/Nonaktifkan auto walk",
     Callback = function(state)
-        if state then
-            toggleAutoWalk()
-        else
-            toggleAutoWalk()
-        end
+        toggleAutoWalk()
     end
 })
 
--- Dropdown untuk memilih arah
+-- Dropdown arah
 MainSection:Dropdown({
     Title = "Arah Jalan",
     Description = "Pilih arah gerakan karakter",
@@ -114,7 +120,7 @@ MainSection:Dropdown({
     end
 })
 
--- Slider untuk mengatur kecepatan
+-- Slider kecepatan
 MainSection:Slider({
     Title = "Kecepatan Jalan",
     Description = "Atur kecepatan berjalan (16 = normal)",
@@ -126,7 +132,7 @@ MainSection:Slider({
     end
 })
 
--- Section informasi
+-- Section info
 local InfoSection = AutoWalkTab:Section({
     Title = "Informasi"
 })
@@ -136,10 +142,10 @@ InfoSection:Label({
 })
 
 InfoSection:Label({
-    Title = "Status: " .. (autoWalkEnabled and "Aktif" or "Nonaktif")
+    Title = "Auto Walk akan berjalan sesuai arah kamera"
 })
 
--- Hotkey untuk membuka/menutup UI
+-- Hotkey Insert
 local UserInputService = game:GetService("UserInputService")
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -150,9 +156,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Notifikasi saat script dijalankan
+-- Notifikasi
 MainWindow:Notification({
     Title = "Success",
-    Description = "Auto Walk Script Loaded!",
+    Description = "Auto Walk Script Loaded! Tekan Insert",
     Duration = 3
 })
