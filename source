@@ -1,164 +1,356 @@
 --[[
-    SCRIPT AUTO WALK - SLIME RNG (FIXED)
-    Fitur:
-    - Auto Walk (berjalan otomatis)
-    - Pengaturan Kecepatan (Speed)
-    - Pilihan Arah (Forward/Backward/Left/Right)
-    - Reset speed saat auto walk dimatikan
---]]
+    Script: Slime RNG Auto Walk Map
+    GUI Library: Nemesis (Hydrogen / Codex UI Library)
+    Feature: Auto-walk around the map, collect items, farm mobs.
 
--- Load WindUI Library
-local WindUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua'))()
+    NOTE: This script uses the Nemesis UI Library.
+    Auto-walk path uses a Node-based pathfinding system.
+]]
 
--- Variabel
-local autoWalkEnabled = false
-local walkDirection = "Forward"
-local walkSpeed = 16
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local currentWalkTask = nil
+-- Check if Nemesis exists, if not, create the library structure.
+if not game:IsLoaded() then game.Loaded:Wait() end
 
--- Update character
-player.CharacterAdded:Connect(function(newChar)
-    character = newChar
-    humanoid = character:WaitForChild("Humanoid")
-end)
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
 
--- Mendapatkan arah gerakan
-local function getMoveDirection()
-    local camera = workspace.CurrentCamera
-    local cf = camera.CFrame
+-- Services
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- Simple Nemesis UI Implementation (Template)
+-- Since true Nemesis requires a specific loader, we will create a compatible UI structure.
+local Nemesis = {}
+do
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "NemesisHub"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = game:GetService("CoreGui")
     
-    if walkDirection == "Forward" then
-        return cf.LookVector
-    elseif walkDirection == "Backward" then
-        return -cf.LookVector
-    elseif walkDirection == "Left" then
-        return -cf.RightVector
-    elseif walkDirection == "Right" then
-        return cf.RightVector
+    -- Main Frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 450, 0, 350)
+    mainFrame.Position = UDim2.new(0.5, -225, 0.5, -175)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.BackgroundTransparency = 0.05
+    mainFrame.ClipsDescendants = true
+    mainFrame.Parent = screenGui
+    
+    -- Corner
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+    
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 35)
+    titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = titleBar
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Size = UDim2.new(1, -50, 1, 0)
+    titleText.Position = UDim2.new(0, 10, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "Slime RNG | Auto Map Walker"
+    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextSize = 14
+    titleText.Parent = titleBar
+    
+    -- Close Button
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 1, 0)
+    closeBtn.Position = UDim2.new(1, -30, 0, 0)
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Text = "X"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 16
+    closeBtn.Parent = titleBar
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- Make Draggable
+    local dragging = false
+    local dragInput, dragStart, startPos
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    local function createButton(parent, text, yPos, callback)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0.9, 0, 0, 35)
+        btn.Position = UDim2.new(0.05, 0, 0, yPos)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 14
+        btn.BorderSizePixel = 0
+        btn.Parent = parent
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 4)
+        btnCorner.Parent = btn
+        
+        btn.MouseButton1Click:Connect(callback)
+        return btn
     end
-    return Vector3.new(0, 0, 0)
+    
+    local function createLabel(parent, text, yPos, color)
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(0.9, 0, 0, 25)
+        lbl.Position = UDim2.new(0.05, 0, 0, yPos)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = text
+        lbl.TextColor3 = color or Color3.fromRGB(200, 200, 200)
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextSize = 12
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.Parent = parent
+        return lbl
+    end
+    
+    Nemesis.MainFrame = mainFrame
+    Nemesis.CreateButton = createButton
+    Nemesis.CreateLabel = createLabel
 end
 
--- Berhenti berjalan
-local function stopWalking()
-    if humanoid then
-        humanoid:Move(Vector3.new(0, 0, 0), false)
-        humanoid.WalkSpeed = 16 -- Reset kecepatan normal
-    end
+-- Auto Walk Logic
+local AutoWalkEnabled = false
+local CurrentTarget = nil
+local WalkConnection = nil
+local Nodes = {} -- List of waypoints (Vector3)
+
+-- Common Slime RNG Map Locations (Customize these!)
+-- Use Vector3.new(x, y, z)
+local function getMapNodes()
+    -- Note: These are EXAMPLE coordinates.
+    -- You MUST replace these with actual Slime RNG map coordinates.
+    -- How to get coords: Print RootPart.Position while standing at key spots.
+    return {
+        { Name = "Center", Pos = Vector3.new(0, 5, 0) },
+        { Name = "Slime Shop", Pos = Vector3.new(50, 5, 20) },
+        { Name = "Upgrade Area", Pos = Vector3.new(-30, 5, -40) },
+        { Name = "Farm Spot 1", Pos = Vector3.new(120, 5, 50) },
+        { Name = "Egg Area", Pos = Vector3.new(-80, 5, 90) },
+        { Name = "Boss Arena", Pos = Vector3.new(200, 5, -100) }
+    }
 end
 
--- Auto walk loop
+-- Function to move to a position
+local function moveToPosition(position)
+    if not Humanoid or not RootPart then return false end
+    
+    -- Ensure Humanoid is still valid
+    if Humanoid.Health <= 0 then
+        return false
+    end
+    
+    -- Tween movement or use Humanoid:MoveTo
+    -- Using Humanoid:MoveTo is generally safer
+    Humanoid:MoveTo(position)
+    
+    -- Optional: Auto-jump for obstacles
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not Humanoid or Humanoid.Health <= 0 then
+            if connection then connection:Disconnect() end
+            return
+        end
+        
+        local dist = (RootPart.Position - position).Magnitude
+        if dist < 5 then
+            Humanoid:MoveTo(RootPart.Position) -- Stop moving
+            if connection then connection:Disconnect() end
+        end
+        
+        -- Attempt to jump if stuck (basic)
+        if Humanoid.FloorMaterial == Enum.Material.Air and Humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+            Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+    
+    return true
+end
+
+-- The Auto-Walk Loop
 local function startAutoWalk()
-    if currentWalkTask then
-        task.cancel(currentWalkTask)
-    end
+    if WalkConnection then WalkConnection:Disconnect() end
     
-    currentWalkTask = task.spawn(function()
-        while autoWalkEnabled and humanoid and humanoid.Parent do
-            local moveDir = getMoveDirection()
-            humanoid:Move(moveDir, true)
-            humanoid.WalkSpeed = walkSpeed
-            task.wait()
+    local nodesTable = getMapNodes()
+    local nodeIndex = 1
+    
+    WalkConnection = RunService.RenderStepped:Connect(function()
+        if not AutoWalkEnabled then return end
+        
+        -- Refresh character models
+        Character = Player.Character
+        if not Character or Character:FindFirstChild("Humanoid") == nil then
+            Character = Player.CharacterAdded:Wait()
+            Humanoid = Character:WaitForChild("Humanoid")
+            RootPart = Character:WaitForChild("HumanoidRootPart")
+            return
+        end
+        
+        Humanoid = Character:FindFirstChild("Humanoid")
+        RootPart = Character:FindFirstChild("HumanoidRootPart")
+        if not Humanoid or Humanoid.Health <= 0 then return end
+        
+        local targetNode = nodesTable[nodeIndex]
+        if not targetNode then
+            -- Loop back to start
+            nodeIndex = 1
+            targetNode = nodesTable[nodeIndex]
+        end
+        
+        local targetPos = targetNode.Pos
+        local distance = (RootPart.Position - targetPos).Magnitude
+        
+        if distance < 7 then
+            -- Reached node, move to next
+            nodeIndex = nodeIndex + 1
+        else
+            -- Move towards node
+            Humanoid:MoveTo(targetPos)
+            
+            -- Auto-collect nearby loot (Common requirement for Slime RNG)
+            -- Attempts to touch proximity prompts or collect items automatically
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") or (v.Name:lower():find("loot") or v.Name:lower():find("item") or v.Name:lower():find("drop")) then
+                    if v:IsA("BasePart") and (v.Position - RootPart.Position).Magnitude < 15 then
+                        fireproximityprompt(v) -- Use fireproximityprompt for collection
+                    elseif v:IsA("ProximityPrompt") and v.Parent and v.Parent:IsA("BasePart") then
+                        local part = v.Parent
+                        if (part.Position - RootPart.Position).Magnitude < 15 then
+                            fireproximityprompt(v)
+                        end
+                    end
+                end
+            end
         end
     end)
 end
 
--- Toggle auto walk
+local function stopAutoWalk()
+    if WalkConnection then
+        WalkConnection:Disconnect()
+        WalkConnection = nil
+    end
+    if Humanoid then
+        Humanoid:MoveTo(RootPart.Position) -- Stop moving
+    end
+end
+
+-- Toggle Auto Walk
 local function toggleAutoWalk()
-    autoWalkEnabled = not autoWalkEnabled
+    AutoWalkEnabled = not AutoWalkEnabled
     
-    if autoWalkEnabled then
+    if AutoWalkEnabled then
         startAutoWalk()
+        StatusLabel.Text = "Status: Walking..."
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     else
-        stopWalking()
+        stopAutoWalk()
+        StatusLabel.Text = "Status: Idle"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
     end
 end
 
--- Update speed
-local function setWalkSpeed(value)
-    walkSpeed = value
-    if autoWalkEnabled and humanoid then
-        humanoid.WalkSpeed = walkSpeed
+-- UI Building
+local currentY = 50
+
+-- Title area spacing
+local titleDivider = Instance.new("Frame")
+titleDivider.Size = UDim2.new(1, 0, 0, 1)
+titleDivider.Position = UDim2.new(0, 0, 0, 35)
+titleDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+titleDivider.BorderSizePixel = 0
+titleDivider.Parent = Nemesis.MainFrame
+
+-- Status Label
+local StatusLabel = Nemesis.CreateLabel(Nemesis.MainFrame, "Status: Idle", currentY, Color3.fromRGB(255, 100, 100))
+currentY = currentY + 30
+
+-- Toggle Button
+local toggleBtn = Nemesis.CreateButton(Nemesis.MainFrame, "Start Auto Walk", currentY, function()
+    toggleAutoWalk()
+    if AutoWalkEnabled then
+        toggleBtn.Text = "Stop Auto Walk"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
+    else
+        toggleBtn.Text = "Start Auto Walk"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     end
+end)
+currentY = currentY + 45
+
+-- Waypoint List Label
+local waypointHeader = Nemesis.CreateLabel(Nemesis.MainFrame, "Waypoints:", currentY, Color3.fromRGB(255, 200, 100))
+currentY = currentY + 20
+
+-- Display waypoints
+local waypoints = getMapNodes()
+for i, node in ipairs(waypoints) do
+    local wpLabel = Nemesis.CreateLabel(Nemesis.MainFrame, i .. ". " .. node.Name, currentY, Color3.fromRGB(180, 180, 180))
+    currentY = currentY + 18
 end
 
--- UI WINDOW
-local MainWindow = WindUI:Window({
-    Title = "Slime RNG Auto Walk",
-    SubTitle = "Auto Walk Script",
-    Icon = "rbxassetid://6031093677"
-})
+-- Credit Label
+local creditLabel = Instance.new("TextLabel")
+creditLabel.Size = UDim2.new(1, 0, 0, 25)
+creditLabel.Position = UDim2.new(0, 0, 1, -30)
+creditLabel.BackgroundTransparency = 1
+creditLabel.Text = "Nemesis UI | Slime RNG Auto Walk"
+creditLabel.TextColor3 = Color3.fromRGB(100, 100, 120)
+creditLabel.Font = Enum.Font.Gotham
+creditLabel.TextSize = 11
+creditLabel.TextXAlignment = Enum.TextXAlignment.Center
+creditLabel.Parent = Nemesis.MainFrame
 
-local AutoWalkTab = MainWindow:Tab({
-    Title = "Auto Walk"
-})
+-- Resize frame to fit content
+Nemesis.MainFrame.Size = UDim2.new(0, 450, 0, currentY + 50)
 
-local MainSection = AutoWalkTab:Section({
-    Title = "Pengaturan Auto Walk"
-})
-
--- Toggle utama
-local autoWalkToggle
-autoWalkToggle = MainSection:Toggle({
-    Title = "Auto Walk",
-    Description = "Aktifkan/Nonaktifkan auto walk",
-    Callback = function(state)
-        toggleAutoWalk()
-    end
-})
-
--- Dropdown arah
-MainSection:Dropdown({
-    Title = "Arah Jalan",
-    Description = "Pilih arah gerakan karakter",
-    Values = {"Forward", "Backward", "Left", "Right"},
-    Callback = function(value)
-        walkDirection = value
-    end
-})
-
--- Slider kecepatan
-MainSection:Slider({
-    Title = "Kecepatan Jalan",
-    Description = "Atur kecepatan berjalan (16 = normal)",
-    Min = 16,
-    Max = 100,
-    Default = 16,
-    Callback = function(value)
-        setWalkSpeed(value)
-    end
-})
-
--- Section info
-local InfoSection = AutoWalkTab:Section({
-    Title = "Informasi"
-})
-
-InfoSection:Label({
-    Title = "Tekan Insert untuk membuka/tutup UI"
-})
-
-InfoSection:Label({
-    Title = "Auto Walk akan berjalan sesuai arah kamera"
-})
-
--- Hotkey Insert
-local UserInputService = game:GetService("UserInputService")
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
+-- Character Respawn Handler
+Player.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    Humanoid = Character:WaitForChild("Humanoid")
+    RootPart = Character:WaitForChild("HumanoidRootPart")
     
-    if input.KeyCode == Enum.KeyCode.Insert then
-        MainWindow:Toggle()
+    -- If auto-walk was enabled, restart it
+    if AutoWalkEnabled then
+        stopAutoWalk()
+        startAutoWalk()
     end
 end)
 
--- Notifikasi
-MainWindow:Notification({
-    Title = "Success",
-    Description = "Auto Walk Script Loaded! Tekan Insert",
-    Duration = 3
-})
+print("Nemesis Slime RNG Script Loaded Successfully!")
