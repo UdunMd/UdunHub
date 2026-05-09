@@ -92,29 +92,58 @@ LoadingScreen:Destroy()
 -- YOUR ORIGINAL SCRIPT STARTS HERE
 local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Ice-Hub-Library/refs/heads/main/Source"))()
 
-local MainWindow = IceHub.CreateMain("Script Name", "v1.0.0")
+local MainWindow = IceHub.CreateMain("Menu", "v1.0.0")
 
-local MainTab = MainWindow:NewTab("Tab", "MainPage")
+local ProfileTab = MainWindow:NewTab("Profile", "ProfilePage")
 
-local MainSection = MainTab:NewSection()
+local ProfileSection = ProfileTab:NewSection()
 
-local AutoSellToggle = MainSection:NewToggle("Toggle", "Description", function(state)
+-- Profile Display
+ProfileSection:NewLabel("=== PLAYER PROFILE ===")
+
+-- Username Label
+ProfileSection:NewLabel("Username: " .. game.Players.LocalPlayer.Name)
+
+-- UserId Label
+ProfileSection:NewLabel("User ID: " .. game.Players.LocalPlayer.UserId)
+
+-- Display Name Label
+ProfileSection:NewLabel("Display Name: " .. game.Players.LocalPlayer.DisplayName)
+
+-- Account Age Label
+local accountAge = game.Players.LocalPlayer.AccountAge
+ProfileSection:NewLabel("Account Age: " .. math.floor(accountAge) .. " days")
+
+ProfileSection:NewLabel("======================")
+
+-- Player Stats Section
+ProfileSection:NewLabel("--- PLAYER STATS ---")
+
+-- Team Label (if game has teams)
+local team = game.Players.LocalPlayer.Team
+if team then
+    ProfileSection:NewLabel("Team: " .. team.Name)
+else
+    ProfileSection:NewLabel("Team: None")
+end
+
+-- Character Info Button
+ProfileSection:NewButton("Refresh Character", "Refresh character info", function()
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            ProfileSection:NewLabel("Health: " .. math.floor(humanoid.Health) .. "/" .. humanoid.MaxHealth)
+        end
+    end
 end)
 
-MainSection:NewButtonCooldown("Cooldown Button", "Description", 5,function()
+-- Copy User ID Button
+ProfileSection:NewButton("Copy User ID", "Copy your user ID to clipboard", function()
+    setclipboard(tostring(game.Players.LocalPlayer.UserId))
 end)
 
-MainSection:NewButton("Button", "Description", function()
+-- Copy Username Button
+ProfileSection:NewButton("Copy Username", "Copy your username to clipboard", function()
+    setclipboard(game.Players.LocalPlayer.Name)
 end)
-
-MainSection:NewLabel("Label")
-
-MainSection:NewSlider("Walk Speed", "Adjust your walk speed", 16, 200, function(value)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
-    end)
-
-local ItemDropdown = MainSection:NewSearchDropdown("Select Item", "Search for items to farm", "Type to search...",{"Sword", "Shield", "Potion", "Armor", "Boots", "Helmet"}, function(selected)
- end)
-
-MainSection:NewFocusTextBox("Player Name", "Enter player name to teleport to", nil, function(text)
-    end)
