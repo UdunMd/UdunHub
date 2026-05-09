@@ -19,7 +19,7 @@ Background.Size = UDim2.new(1, 0, 1, 0)
 Logo.Name = "Logo"
 Logo.Parent = Background
 Logo.BackgroundTransparency = 1
-Logo.Position = UDim2.new(0.5, -150, 0.4, 0)  -- posisi sedikit di tengah atas
+Logo.Position = UDim2.new(0.5, -150, 0.4, 0)
 Logo.Size = UDim2.new(0, 300, 0, 60)
 Logo.Font = Enum.Font.GothamBold
 Logo.Text = "UDUNHUB"
@@ -29,7 +29,7 @@ Logo.TextScaled = true
 Logo.TextStrokeTransparency = 0.5
 Logo.TextStrokeColor3 = Color3.fromRGB(0, 100, 150)
 
--- Teks tambahan (opsional, tanpa bar)
+-- Teks tambahan (tanpa bar)
 SubText.Name = "SubText"
 SubText.Parent = Background
 SubText.BackgroundTransparency = 1
@@ -41,30 +41,25 @@ SubText.TextColor3 = Color3.fromRGB(180, 180, 200)
 SubText.TextSize = 16
 SubText.TextScaled = false
 
--- --- ANIMASI LOGO (PULSING SIZE & WARNA) ---
+-- ANIMASI LOGO (PULSING SIZE & WARNA)
 local TweenService = game:GetService("TweenService")
 
--- Ukuran asli dan ukuran membesar
 local originalSize = Logo.Size
 local biggerSize = UDim2.new(0, 330, 0, 66)
 local originalColor = Logo.TextColor3
 local brighterColor = Color3.fromRGB(0, 230, 255)
 
--- Konfigurasi tween
 local tweenInfoUp = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 local tweenInfoDown = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
 
--- Fungsi untuk animasi berulang
 local function animateLogo()
     while LoadingScreen and LoadingScreen.Parent do
-        -- Perbesar dan ubah warna
         local sizeTweenUp = TweenService:Create(Logo, tweenInfoUp, {Size = biggerSize})
         local colorTweenUp = TweenService:Create(Logo, tweenInfoUp, {TextColor3 = brighterColor})
         sizeTweenUp:Play()
         colorTweenUp:Play()
         wait(0.6)
         
-        -- Kembalikan ke ukuran dan warna semula
         local sizeTweenDown = TweenService:Create(Logo, tweenInfoDown, {Size = originalSize})
         local colorTweenDown = TweenService:Create(Logo, tweenInfoDown, {TextColor3 = originalColor})
         sizeTweenDown:Play()
@@ -73,18 +68,31 @@ local function animateLogo()
     end
 end
 
--- Jalankan animasi di coroutine
 coroutine.wrap(animateLogo)()
 
--- Simulasi waktu loading (tanpa bar, hanya delay)
-wait(2.2)  -- total durasi loading screen
+-- SIMULASI LOADING DENGAN DURASI YANG LEBIH LAMA (4.5 DETIK)
+local startTime = tick()
+local minLoadTime = 4.5 -- detik
 
--- Hapus loading screen setelah selesai
+-- Bisa juga menambahkan efek perubahan teks "Memuat..." menjadi "Selesai!"
+-- agar pengguna tahu loading hampir selesai (opsional)
+local function updateSubText()
+    wait(3.2) -- setelah 3.2 detik, ubah teks
+    if SubText and SubText.Parent then
+        SubText.Text = "Selesai! 🚀"
+        SubText.TextColor3 = Color3.fromRGB(0, 230, 200)
+    end
+end
+coroutine.wrap(updateSubText)()
+
+-- Tunggu hingga waktu minimum tercapai
+repeat wait() until tick() - startTime >= minLoadTime
+
+-- Hapus loading screen
 LoadingScreen:Destroy()
 
 -- INISIALISASI ICEHUB (TANPA TAB APAPUN)
 local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Ice-Hub-Library/refs/heads/main/Source"))()
-
 local MainWindow = IceHub.CreateMain("Menu Utama", "v1.0.0")
 
 -- Tidak ada tab atau konten apapun yang ditambahkan
