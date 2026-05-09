@@ -89,9 +89,15 @@ wait(0.3)
 -- Remove loading screen
 LoadingScreen:Destroy()
 
--- INISIALISASI ICEHUB (TANPA TAB)
+-- SCRIPT UTAMA DENGAN TAB INFO
 local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Ice-Hub-Library/refs/heads/main/Source"))()
 
 local MainWindow = IceHub.CreateMain("Menu Utama", "v1.0.0")
 
--- Tidak ada tab atau section apapun
+local InfoTab = MainWindow:NewTab("Info", "InfoPage")
+
+local InfoSection = InfoTab:NewSection()
+
+-- Isi tab Info (biarkan kosong atau beri label)
+InfoSection:NewLabel("Selamat datang di Menu Info")
+InfoSection:NewLabel("Fitur akan ditambahkan di sini nanti")
