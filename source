@@ -92,8 +92,9 @@ LoadingScreen:Destroy()
 -- YOUR ORIGINAL SCRIPT STARTS HERE
 local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Ice-Hub-Library/refs/heads/main/Source"))()
 
-local MainWindow = IceHub.CreateMain("Menu", "v1.0.0")
+local MainWindow = IceHub.CreateMain("Menu Utama", "v1.0.0")
 
+-- TAB PROFILE (pertama/atas)
 local ProfileTab = MainWindow:NewTab("Profile", "ProfilePage")
 
 local ProfileSection = ProfileTab:NewSection()
@@ -147,3 +148,12 @@ end)
 ProfileSection:NewButton("Copy Username", "Copy your username to clipboard", function()
     setclipboard(game.Players.LocalPlayer.Name)
 end)
+
+-- TAB MENU (kedua/bawah)
+local MenuTab = MainWindow:NewTab("Menu", "MainPage")
+
+local MenuSection = MenuTab:NewSection()
+
+-- Menu Section kosong/siap ditambahkan fitur nanti
+MenuSection:NewLabel("=== MENU UTAMA ===")
+MenuSection:NewLabel("Tempat untuk fitur-fitur nanti")
