@@ -91,8 +91,8 @@ repeat wait() until tick() - startTime >= minLoadTime
 -- Hapus loading screen
 LoadingScreen:Destroy()
 
--- INISIALISASI ICEHUB (TANPA TAB APAPUN)
-local IceHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/NIcoGabrielRealYtr/Ice-Hub-Library/refs/heads/main/Source"))()
-local MainWindow = IceHub.CreateMain("Menu Utama", "v1.0.0")
+-- INISIALISASI UDUNHUB (TANPA TAB APAPUN)
+local UdunHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/UdunMd/UdunHub/refs/heads/main/library"))()
+local MainWindow = UdunHub.CreateMain("Menu Utama", "v1.0.0")
 
 -- Tidak ada tab atau konten apapun yang ditambahkan
